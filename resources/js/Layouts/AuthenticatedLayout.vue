@@ -23,9 +23,7 @@ const showingNavigationDropdown = ref(false);
                             <!-- Logo -->
                             <div class="flex shrink-0 items-center">
                                 <Link :href="route('dashboard')">
-                                    <ApplicationLogo
-                                        class="block h-9 w-auto fill-current text-gray-800"
-                                    />
+                                    <ApplicationLogo />
                                 </Link>
                             </div>
 
@@ -34,16 +32,16 @@ const showingNavigationDropdown = ref(false);
                                 class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex"
                             >
                                 <NavLink
-                                    :href="route('invoices.index', { segment: 'external' })"
-                                    :active="route().current('invoices.index') || route().current('invoices.create') || route().current('invoices.edit')"
-                                >
-                                    Invoices
-                                </NavLink>
-                                <NavLink
                                     :href="route('dashboard')"
                                     :active="route().current('dashboard')"
                                 >
                                     Dashboard
+                                </NavLink>
+                                <NavLink
+                                    :href="route('invoices.index', { segment: 'external' })"
+                                    :active="route().current('invoices.index') || route().current('invoices.create') || route().current('invoices.edit')"
+                                >
+                                    Invoices
                                 </NavLink>
                             </div>
                         </div>
@@ -81,6 +79,11 @@ const showingNavigationDropdown = ref(false);
                                             :href="route('settings.index', { tab: 'personal' })"
                                         >
                                             Profile
+                                        </DropdownLink>
+                                        <DropdownLink
+                                            :href="route('settings.api-tokens.index')"
+                                        >
+                                            API Tokens
                                         </DropdownLink>
                                         <DropdownLink
                                             :href="route('logout')"
@@ -147,16 +150,16 @@ const showingNavigationDropdown = ref(false);
                 >
                     <div class="space-y-1 pb-3 pt-2">
                         <ResponsiveNavLink
-                            :href="route('invoices.index', { segment: 'external' })"
-                            :active="route().current('invoices.index') || route().current('invoices.create') || route().current('invoices.edit')"
-                        >
-                            Invoices
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
                             :href="route('dashboard')"
                             :active="route().current('dashboard')"
                         >
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="route('invoices.index', { segment: 'external' })"
+                            :active="route().current('invoices.index') || route().current('invoices.create') || route().current('invoices.edit')"
+                        >
+                            Invoices
                         </ResponsiveNavLink>
                     </div>
 
@@ -178,6 +181,9 @@ const showingNavigationDropdown = ref(false);
                         <div class="mt-3 space-y-1">
                             <ResponsiveNavLink :href="route('settings.index', { tab: 'personal' })">
                                 Profile
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('settings.api-tokens.index')">
+                                API Tokens
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 :href="route('logout')"
