@@ -7,19 +7,24 @@ use App\Enums\InvoiceStatus;
 use App\Mail\RecurringInvoiceGenerated;
 use App\Models\Invoice;
 use App\Models\RecurringInvoice;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
 class GenerateRecurringInvoices extends Command
 {
-    protected $signature = 'invoices:generate-recurring';
+    private const MAX_CATCH_UP_ITERATIONS = 500;
+
+    protected $signature = 'invoices:generate-recurring
+                            {--catch-up : Generate every overdue period for each schedule (default: one invoice per schedule)}';
 
     protected $description = 'Generate invoices from active recurring schedules that are due today or overdue';
 
     public function handle(): int
     {
         $today = now()->startOfDay();
+        $catchUp = (bool) $this->option('catch-up');
 
         $schedules = RecurringInvoice::query()
             ->with(['user', 'templateInvoice.lineItems', 'templateInvoice.client'])
@@ -31,7 +36,11 @@ class GenerateRecurringInvoices extends Command
 
         foreach ($schedules as $schedule) {
             try {
-                $this->processSchedule($schedule);
+                if ($catchUp) {
+                    $this->processScheduleCatchUp($schedule, $today);
+                } else {
+                    $this->processScheduleOnce($schedule);
+                }
             } catch (\Throwable $e) {
                 $this->error("Failed schedule #{$schedule->id}: {$e->getMessage()}");
                 report($e);
@@ -41,20 +50,47 @@ class GenerateRecurringInvoices extends Command
         return self::SUCCESS;
     }
 
-    private function processSchedule(RecurringInvoice $schedule): void
+    private function processScheduleOnce(RecurringInvoice $schedule): void
+    {
+        $runDate = $schedule->next_run_at->copy()->startOfDay();
+        $this->generateOneInvoiceForSchedule($schedule, $runDate);
+    }
+
+    private function processScheduleCatchUp(RecurringInvoice $schedule, Carbon $today): void
+    {
+        $iterations = 0;
+
+        while (
+            $schedule->next_run_at->copy()->startOfDay() <= $today
+            && $iterations < self::MAX_CATCH_UP_ITERATIONS
+        ) {
+            $schedule->load(['user', 'templateInvoice.lineItems', 'templateInvoice.client']);
+            $runDate = $schedule->next_run_at->copy()->startOfDay();
+            $this->generateOneInvoiceForSchedule($schedule, $runDate);
+            $iterations++;
+            $schedule->refresh();
+        }
+
+        if ($iterations >= self::MAX_CATCH_UP_ITERATIONS) {
+            $this->warn("Schedule #{$schedule->id} hit catch-up limit (".self::MAX_CATCH_UP_ITERATIONS.' iterations) — stopped.');
+        }
+    }
+
+    private function generateOneInvoiceForSchedule(RecurringInvoice $schedule, Carbon $runDate): void
     {
         $template = $schedule->templateInvoice;
         $user = $schedule->user;
 
         if (! $template || ! $user) {
             $this->warn("Schedule #{$schedule->id} has no template or user — skipping.");
+
             return;
         }
 
         $clientType = $template->client?->type ?? ClientType::External;
 
-        DB::transaction(function () use ($schedule, $template, $user, $clientType) {
-            $issueDate = now();
+        DB::transaction(function () use ($schedule, $template, $user, $clientType, $runDate) {
+            $issueDate = $runDate->copy();
 
             $newInvoice = new Invoice([
                 'issue_date' => $issueDate,
@@ -89,8 +125,8 @@ class GenerateRecurringInvoices extends Command
                 ]);
             }
 
-            $schedule->last_run_at = now()->toDateString();
-            $schedule->next_run_at = $schedule->calculateNextRunAt(now());
+            $schedule->last_run_at = $runDate->toDateString();
+            $schedule->next_run_at = $schedule->calculateNextRunAt($runDate->copy());
             $schedule->save();
 
             Mail::to($user->email)->queue(new RecurringInvoiceGenerated($user, $schedule, $newInvoice));

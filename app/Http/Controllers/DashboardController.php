@@ -61,14 +61,19 @@ class DashboardController extends Controller
         // Monthly revenue: last 12 months of paid invoices grouped by month
         $twelveMonthsAgo = Carbon::now()->startOfMonth()->subMonths(11);
 
+        $monthExpr = match (DB::connection()->getDriverName()) {
+            'pgsql' => "to_char(issue_date::date, 'YYYY-MM')",
+            default => "strftime('%Y-%m', issue_date)",
+        };
+
         $monthlyRaw = (clone $base)
             ->where('status', InvoiceStatus::Paid)
             ->whereDate('issue_date', '>=', $twelveMonthsAgo->toDateString())
             ->select(
-                DB::raw("strftime('%Y-%m', issue_date) as month"),
+                DB::raw("{$monthExpr} as month"),
                 DB::raw('SUM(amount) as total')
             )
-            ->groupBy('month')
+            ->groupByRaw($monthExpr)
             ->orderBy('month')
             ->get()
             ->keyBy('month');

@@ -66,7 +66,7 @@
         ],
         "post-create-project-cmd": [
             "@php artisan key:generate --ansi",
-            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php -r \"$env = file_exists('.env') ? file_get_contents('.env') : ''; if (preg_match('/^DB_CONNECTION=sqlite\\s*$/m', $env)) { file_exists('database/database.sqlite') || touch('database/database.sqlite'); }\"",
             "@php artisan migrate --graceful --ansi"
         ],
         "pre-package-uninstall": [

@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'pgsql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -31,6 +31,18 @@ return [
     */
 
     'connections' => [
+
+        'sqlite_migrate' => [
+            'driver' => 'sqlite',
+            'url' => env('DB_URL'),
+            'database' => database_path('database.sqlite'),
+            'prefix' => '',
+            'foreign_key_constraints' => false,
+            'busy_timeout' => null,
+            'journal_mode' => null,
+            'synchronous' => null,
+            'transaction_mode' => 'DEFERRED',
+        ],
 
         'sqlite' => [
             'driver' => 'sqlite',
