@@ -437,14 +437,14 @@ function toggleRowMenu(id) {
                                             class="absolute right-6 z-10 mt-1 w-44 rounded-lg border border-gray-100 bg-white py-1 text-left shadow-lg"
                                         >
                                             <Link
-                                                :href="route('invoices.edit', inv.id)"
+                                                :href="route('invoices.edit', inv.uuid)"
                                                 class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                                 @click="rowMenuOpen = null"
                                             >
                                                 Edit
                                             </Link>
                                             <a
-                                                :href="route('invoices.pdf', inv.id)"
+                                                :href="route('invoices.pdf', inv.uuid)"
                                                 class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                                 target="_blank"
                                                 rel="noopener"
@@ -454,7 +454,7 @@ function toggleRowMenu(id) {
                                             </a>
                                             <a
                                                 v-if="inv.has_attachment"
-                                                :href="route('invoices.attachment', inv.id)"
+                                                :href="route('invoices.attachment', inv.uuid)"
                                                 class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                                 @click="rowMenuOpen = null"
                                             >
@@ -465,7 +465,7 @@ function toggleRowMenu(id) {
                                                 class="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
                                                 @click="
                                                     rowMenuOpen = null;
-                                                    deleteInvoice(inv.id);
+                                                    deleteInvoice(inv.uuid);
                                                 "
                                             >
                                                 Delete

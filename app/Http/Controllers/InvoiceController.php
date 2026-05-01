@@ -78,6 +78,7 @@ class InvoiceController extends Controller
             ->withQueryString()
             ->through(fn(Invoice $invoice) => [
                 'id' => $invoice->id,
+                'uuid' => $invoice->uuid,
                 'number' => $invoice->number,
                 'client' => [
                     'id' => $invoice->client->id,
@@ -284,6 +285,7 @@ class InvoiceController extends Controller
         return Inertia::render('Invoices/Edit', [
             'invoice' => [
                 'id' => $invoice->id,
+                'uuid' => $invoice->uuid,
                 'number' => $invoice->number,
                 'client_id' => $invoice->client_id,
                 'issue_date' => $invoice->issue_date->format('Y-m-d'),

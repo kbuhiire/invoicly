@@ -116,7 +116,7 @@ function onFile(e) {
 }
 
 function submit() {
-    form.post(route('invoices.update', props.invoice.id), {
+    form.post(route('invoices.update', props.invoice.uuid), {
         forceFormData: true,
         preserveScroll: true,
     });

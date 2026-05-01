@@ -101,6 +101,7 @@ class DashboardController extends Controller
             ->get()
             ->map(fn (Invoice $invoice) => [
                 'id' => $invoice->id,
+                'uuid' => $invoice->uuid,
                 'number' => $invoice->number,
                 'client' => $invoice->client->name,
                 'amount' => (float) $invoice->amount,

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\InvoiceLineItemFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class InvoiceLineItem extends Model
 {
     /** @use HasFactory<InvoiceLineItemFactory> */
-    use HasFactory;
+    use HasFactory, HasUuids;
+
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
+    }
 
     protected function casts(): array
     {

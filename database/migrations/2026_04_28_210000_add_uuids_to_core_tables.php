@@ -10,6 +10,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        $driver = DB::getDriverName();
+
         $tables = [
             'users',
             'clients',
@@ -42,8 +44,10 @@ return new class extends Migration
         }
 
         // Make uuid non-nullable after backfill (avoid ->change() to not require doctrine/dbal).
-        foreach ($tables as $table) {
-            DB::statement("alter table \"{$table}\" alter column \"uuid\" set not null");
+        if ($driver === 'pgsql') {
+            foreach ($tables as $table) {
+                DB::statement("alter table \"{$table}\" alter column \"uuid\" set not null");
+            }
         }
     }
 

@@ -286,7 +286,7 @@ const topClientMax = computed(() =>
                                     >
                                         <td class="px-5 py-3">
                                             <a
-                                                :href="route('invoices.edit', inv.id)"
+                                                :href="route('invoices.edit', inv.uuid)"
                                                 class="font-medium text-indigo-600 hover:text-indigo-800"
                                             >{{ inv.number }}</a>
                                         </td>
