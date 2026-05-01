@@ -1,9 +1,16 @@
+# Vendor deps for Vite (Ziggy imports from vendor/tightenco/ziggy)
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --prefer-dist
+
 # Stage 1: Build Vue assets
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+COPY --from=vendor /app/vendor ./vendor
 RUN npm run build
 
 # Stage 2: PHP Application
