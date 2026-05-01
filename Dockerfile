@@ -17,11 +17,11 @@ RUN npm run build
 FROM php:8.3-fpm-alpine
 WORKDIR /var/www/html
 
-# Install system dependencies
-RUN apk add --no-cache nginx libpng-dev libxml2-dev zip unzip git
+# Install system dependencies (postgresql-dev required for pdo_pgsql)
+RUN apk add --no-cache nginx libpng-dev libxml2-dev postgresql-dev zip unzip git
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql bcmath gd
+# Install PHP extensions — default app DB is pgsql per config/database.php
+RUN docker-php-ext-install pdo_mysql pdo_pgsql bcmath gd
 
 # Copy application files
 COPY . .
