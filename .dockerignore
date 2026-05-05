@@ -12,5 +12,4 @@ bootstrap/cache/*.php
 public/hot
 *.md
 tests
-.docker
 scripts
