@@ -1,0 +1,71 @@
+FROM php:8.2.9-fpm
+
+WORKDIR /var/www
+
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    libcurl4-openssl-dev \
+    sqlite3 \
+    libsqlite3-dev \
+    openssl \
+    git \
+    curl \
+    zip \
+    unzip
+
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN docker-php-ext-install pdo pdo_sqlite mbstring exif pcntl bcmath gd zip
+
+# Install OPCache
+RUN docker-php-ext-install opcache
+
+# Use the default production configuration
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+
+RUN apt update && apt install -y vim nodejs npm
+
+COPY --from=composer:2.5.8 /usr/bin/composer /usr/bin/composer
+
+RUN useradd -G www-data,root -u 1000 -d /home/deployer deployer
+
+COPY . .
+
+# Make sure the SQLite DB file exists
+RUN mkdir -p database && touch database/database.sqlite
+
+RUN mkdir -p /home/deployer/.composer && \
+    chown -R deployer:deployer /home/deployer && \
+    chown -R deployer:deployer /var/www
+
+RUN composer install
+
+RUN npm ci
+RUN npm run build
+
+RUN rm -r node_modules
+
+#set proper file permissions
+RUN chown -R deployer:www-data /var/www && \
+    usermod -aG www-data deployer
+
+RUN find . -type f -exec chmod 664 {} \;
+
+RUN find . -type d -exec chmod 775 {} \;
+
+RUN chgrp -R www-data storage bootstrap/cache && \
+    chmod -R ug+rwx storage bootstrap/cache
+
+COPY .docker/k8s-php.ini /usr/local/etc/php/conf.d/custom-php.ini
+COPY .docker/k8s-opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+
+RUN curl -o /etc/ssl/certs/ca-certificates.crt https://curl.se/ca/cacert.pem
+COPY .docker/k8s-curl-ca-certificates.ini /usr/local/etc/php/conf.d/curl-ca-certificates.ini
+RUN cat .docker/k8s-fpm.conf >> /usr/local/etc/php-fpm.d/www.conf
+
+EXPOSE 9000
+
+USER deployer
