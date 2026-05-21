@@ -169,7 +169,7 @@ function toggleRowMenu(id) {
     <Head title="Invoices" />
 
     <AuthenticatedLayout>
-        <div class="min-h-screen bg-zinc-100 pb-16">
+        <div class="min-h-screen bg-gray-100 pb-16">
             <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
                 <div
                     v-if="page.props.flash?.success"
@@ -188,7 +188,9 @@ function toggleRowMenu(id) {
                             @click="currencyOpen = true"
                         >
                             {{ currencyLabel }}
-                            <span class="text-gray-400" aria-hidden="true">✎</span>
+                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Z" />
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -222,7 +224,9 @@ function toggleRowMenu(id) {
                 <div
                     class="mb-6 flex gap-2 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900"
                 >
-                    <span class="text-sky-600" aria-hidden="true">ⓘ</span>
+                    <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-sky-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                    </svg>
                     <p v-if="segment === 'external'">
                         These invoices are for organizations that are not registered on the
                         platform.
@@ -236,14 +240,15 @@ function toggleRowMenu(id) {
                     class="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
                 >
                     <div class="relative flex-1">
-                        <span
-                            class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400"
-                            >🔍</span
-                        >
+                        <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                            </svg>
+                        </span>
                         <input
                             v-model="search"
                             type="search"
-                            placeholder="Search for contract name, contractor name or invoice ID."
+                            placeholder="Search by client, contractor, or invoice number"
                             class="w-full rounded-full border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm shadow-sm placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200"
                         />
                     </div>
@@ -278,10 +283,12 @@ function toggleRowMenu(id) {
                         </PrimaryButton>
                         <button
                             type="button"
-                            class="rounded-full border border-gray-200 bg-white p-2 text-gray-600 shadow-sm"
+                            class="rounded-full border border-gray-200 bg-white p-2 text-gray-600 shadow-sm transition hover:bg-gray-50 hover:text-gray-900"
                             aria-label="More actions"
                         >
-                            ⋮
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path d="M10 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM10 11.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM11.5 15.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -292,12 +299,18 @@ function toggleRowMenu(id) {
                         class="flex w-full items-center justify-between px-5 py-4 text-left text-sm font-semibold text-gray-900"
                         @click="balanceOpen = !balanceOpen"
                     >
-                        Balance Summary
-                        <span class="text-gray-400">{{ balanceOpen ? '⌃' : '⌄' }}</span>
+                        Balance summary
+                        <svg
+                            class="h-5 w-5 text-gray-400 transition-transform duration-200"
+                            :class="balanceOpen ? 'rotate-180' : ''"
+                            fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
+                        >
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
                     </button>
                     <div v-show="balanceOpen" class="grid gap-4 border-t border-gray-100 px-5 pb-5 pt-4 sm:grid-cols-2">
-                        <div class="rounded-xl border border-gray-100 bg-zinc-50 p-5">
-                            <div class="mb-2 text-2xl font-semibold text-gray-900">
+                        <div class="rounded-xl border border-gray-100 bg-gray-50 p-5">
+                            <div class="mb-2 text-2xl font-semibold text-gray-900 tabular-nums">
                                 {{ formatMoney(balance.paid_total, balance.currency) }}
                             </div>
                             <span
@@ -307,7 +320,7 @@ function toggleRowMenu(id) {
                                 Paid
                             </span>
                         </div>
-                        <div class="rounded-xl border border-gray-100 bg-zinc-50 p-5">
+                        <div class="rounded-xl border border-gray-100 bg-gray-50 p-5">
                             <div
                                 class="mb-2 text-2xl font-semibold"
                                 style="color: #7c2d12"
@@ -330,8 +343,12 @@ function toggleRowMenu(id) {
                             Total of {{ invoices.total }}
                             {{ segment === 'external' ? 'external' : 'Invoicly' }} invoices.
                         </p>
-                        <button type="button" class="text-sm text-gray-500 hover:text-gray-800">
-                            ⚙ Invoice settings
+                        <button type="button" class="inline-flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.397-1.11-.94l-.213-1.28c-.062-.375-.312-.687-.644-.87a6.52 6.52 0 0 1-.22-.128c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            </svg>
+                            Invoice settings
                         </button>
                     </div>
                     <div class="overflow-x-auto">
@@ -426,11 +443,13 @@ function toggleRowMenu(id) {
                                     <td class="relative px-5 py-4 text-right">
                                         <button
                                             type="button"
-                                            class="rounded p-1 text-gray-500 hover:bg-gray-100"
+                                            class="rounded p-1 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
                                             aria-label="Row menu"
                                             @click="toggleRowMenu(inv.id)"
                                         >
-                                            ⋮
+                                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                                <path d="M10 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM10 11.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM11.5 15.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+                                            </svg>
                                         </button>
                                         <div
                                             v-if="rowMenuOpen === inv.id"
@@ -607,7 +626,9 @@ function toggleRowMenu(id) {
                 </div>
                 <div class="mt-5 flex gap-3">
                     <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100">
-                        <span class="text-lg text-red-600" aria-hidden="true">⚠</span>
+                        <svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                        </svg>
                     </div>
                     <div>
                         <p class="text-sm font-medium text-gray-900">

@@ -1,3 +1,59 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* Align figures in data-heavy invoice tables so columns line up. */
+    table {
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
+    }
+}
+
+@layer components {
+    /* Staggered entrance: set --i on each tile; delay cascades off it. */
+    .tile-enter {
+        animation: tile-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: calc(var(--i, 0) * 70ms);
+    }
+
+    /* Shimmer sweep for skeleton loaders. */
+    .skeleton {
+        position: relative;
+        overflow: hidden;
+        background-color: theme('colors.gray.200');
+    }
+    .skeleton::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background-image: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0) 0,
+            rgba(255, 255, 255, 0.55) 50%,
+            rgba(255, 255, 255, 0) 100%
+        );
+        animation: shimmer 1.4s infinite;
+    }
+}
+
+/* Honour reduced-motion: kill entrance, shimmer, breathing, smooth scroll. */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+    .tile-enter,
+    .skeleton::after,
+    .animate-breathe {
+        animation: none !important;
+    }
+    .tile-enter {
+        opacity: 1;
+        transform: none;
+    }
+}

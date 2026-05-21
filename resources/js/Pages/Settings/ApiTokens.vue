@@ -125,7 +125,7 @@ function toggleAbility(id) {
                                 <span
                                     v-for="ability in token.abilities"
                                     :key="ability"
-                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200"
+                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-200"
                                 >
                                     {{ ability }}
                                 </span>
@@ -151,7 +151,7 @@ function toggleAbility(id) {
                     <dl class="space-y-2">
                         <div v-for="ability in abilities" :key="ability.id" class="flex gap-3">
                             <dt class="w-40 shrink-0">
-                                <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-indigo-700">{{ ability.id }}</code>
+                                <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-brand-700">{{ ability.id }}</code>
                             </dt>
                             <dd class="text-sm text-gray-600">{{ ability.description }}</dd>
                         </div>
@@ -194,7 +194,7 @@ function toggleAbility(id) {
                                     :value="ability.id"
                                     :checked="createForm.abilities.includes(ability.id)"
                                     @change="toggleAbility(ability.id)"
-                                    class="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    class="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
                                 />
                                 <span class="flex-1">
                                     <span class="block text-sm font-medium text-gray-800">{{ ability.label }}</span>
@@ -227,7 +227,7 @@ function toggleAbility(id) {
                     <button
                         type="button"
                         @click="copyToken"
-                        class="shrink-0 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                        class="shrink-0 text-xs text-brand-600 hover:text-brand-800 font-medium"
                     >
                         {{ copied ? 'Copied!' : 'Copy' }}
                     </button>

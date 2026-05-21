@@ -127,7 +127,7 @@ function submit() {
     <Head :title="`Edit ${invoice.number}`" />
 
     <AuthenticatedLayout>
-        <div class="min-h-screen bg-zinc-100 pb-16">
+        <div class="min-h-screen bg-gray-100 pb-16">
             <div class="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
                 <div class="mb-6 flex items-center justify-between gap-4">
                     <div>
@@ -150,7 +150,7 @@ function submit() {
                         <InputLabel value="Client" />
                         <select
                             v-model="form.client_id"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                             required
                         >
                             <option v-for="c in clients" :key="c.id" :value="c.id">
@@ -175,7 +175,7 @@ function submit() {
                             <InputLabel value="Status" />
                             <select
                                 v-model="form.status"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                             >
                                 <option value="awaiting_payment">Awaiting payment</option>
                                 <option value="paid">Paid</option>
@@ -244,7 +244,7 @@ function submit() {
                             <InputLabel value="Line items" />
                             <button
                                 type="button"
-                                class="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                                class="text-sm font-medium text-brand-600 hover:text-brand-800"
                                 @click="addLine"
                             >
                                 + Add line
@@ -261,7 +261,7 @@ function submit() {
                                     <textarea
                                         v-model="line.description"
                                         rows="3"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                         required
                                     />
                                 </div>
@@ -303,7 +303,7 @@ function submit() {
                             <InputLabel value="Payment details (optional)" />
                             <button
                                 type="button"
-                                class="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                                class="text-sm font-medium text-brand-600 hover:text-brand-800"
                                 @click="openCreatePaymentMethod"
                             >
                                 + Save new
@@ -319,7 +319,7 @@ function submit() {
                             >
                                 <button
                                     type="button"
-                                    class="flex-1 text-left text-sm font-medium text-gray-800 hover:text-indigo-600"
+                                    class="flex-1 text-left text-sm font-medium text-gray-800 hover:text-brand-600"
                                     @click="applyPaymentMethod(pm)"
                                 >
                                     {{ pm.name }}
@@ -339,7 +339,7 @@ function submit() {
                             rows="4"
                             maxlength="500"
                             placeholder="Your payment details"
-                            class="block w-full resize-none rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="block w-full resize-none rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                         ></textarea>
                         <div class="mt-1 flex justify-end text-xs text-gray-400">
                             {{ (form.payment_details || '').length }} / 500
@@ -408,7 +408,7 @@ function submit() {
                             rows="4"
                             maxlength="500"
                             placeholder="Bank name, account number, IBAN, etc."
-                            class="mt-1 block w-full resize-none rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full resize-none rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                         ></textarea>
                         <p v-if="pmErrors.details" class="mt-1 text-sm text-red-600">{{ pmErrors.details }}</p>
                     </div>

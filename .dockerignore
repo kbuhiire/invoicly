@@ -2,6 +2,11 @@
 .env.*
 !.env.example
 node_modules
+vendor
+public/build
+.venv-pdf
+invoicly-wp-plugin
+invoicly-wp-plugin.zip
 .git
 .gitignore
 storage/logs/*

@@ -55,7 +55,7 @@ const canSave = computed(() => form.isDirty);
     <Head title="Edit address" />
 
     <AuthenticatedLayout>
-        <div class="min-h-screen bg-zinc-100 pb-16">
+        <div class="min-h-screen bg-gray-100 pb-16">
             <div class="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Edit address</h1>
@@ -134,7 +134,7 @@ const canSave = computed(() => form.isDirty);
                                     <select
                                         id="pa_country"
                                         v-model="form.personal_address.country_code"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                     >
                                         <option value="">Select country</option>
                                         <option v-for="c in countries" :key="c.code" :value="c.code">
@@ -211,7 +211,7 @@ const canSave = computed(() => form.isDirty);
                                     <select
                                         id="po_country"
                                         v-model="form.postal_address.country_code"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                     >
                                         <option value="">Select country</option>
                                         <option v-for="c in countries" :key="'p-' + c.code" :value="c.code">

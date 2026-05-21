@@ -730,7 +730,7 @@ onUnmounted(() => {
     <Head title="Create invoice" />
 
     <AuthenticatedLayout>
-        <div class="min-h-screen bg-zinc-100 pb-28">
+        <div class="min-h-screen bg-gray-100 pb-28">
             <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
                 <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
@@ -1306,7 +1306,7 @@ onUnmounted(() => {
                                             <textarea
                                                 v-model="line.description"
                                                 rows="3"
-                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                                 required
                                             />
                                         </div>
@@ -1315,7 +1315,7 @@ onUnmounted(() => {
                                             <input
                                                 :value="formatNumberInput(line.quantity)"
                                                 type="text"
-                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                                 required
                                                 @input="onQuantityInput(index, $event)"
                                             />
@@ -1325,7 +1325,7 @@ onUnmounted(() => {
                                             <input
                                                 :value="formatNumberInput(line.unit_price)"
                                                 type="text"
-                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                                 required
                                                 @input="onUnitPriceInput(index, $event)"
                                             />
@@ -1447,7 +1447,7 @@ onUnmounted(() => {
                                     </div>
                                     <button
                                         type="button"
-                                        class="shrink-0 text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                                        class="shrink-0 text-sm font-medium text-brand-600 hover:text-brand-800"
                                         @click="openCreatePaymentMethod"
                                     >
                                         + Save new
@@ -1465,7 +1465,7 @@ onUnmounted(() => {
                                         >
                                             <button
                                                 type="button"
-                                                class="flex-1 text-left text-sm font-medium text-gray-800 hover:text-indigo-600"
+                                                class="flex-1 text-left text-sm font-medium text-gray-800 hover:text-brand-600"
                                                 @click="applyPaymentMethod(pm)"
                                             >
                                                 {{ pm.name }}
@@ -2119,7 +2119,7 @@ onUnmounted(() => {
                             rows="4"
                             maxlength="500"
                             placeholder="Bank name, account number, IBAN, etc."
-                            class="mt-1 block w-full resize-none rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full resize-none rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                         ></textarea>
                         <p v-if="pmErrors.details" class="mt-1 text-sm text-red-600">{{ pmErrors.details }}</p>
                     </div>

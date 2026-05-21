@@ -63,7 +63,7 @@ const canSave = computed(() => form.isDirty || form.photo != null);
     <Head title="Edit personal details" />
 
     <AuthenticatedLayout>
-        <div class="min-h-screen bg-zinc-100 pb-16">
+        <div class="min-h-screen bg-gray-100 pb-16">
             <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Edit personal details</h1>
@@ -172,7 +172,7 @@ const canSave = computed(() => form.isDirty || form.photo != null);
                                     <select
                                         id="citizenship_country"
                                         v-model="form.citizenship_country"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                     >
                                         <option value="">Select country</option>
                                         <option v-for="c in countries" :key="c.code" :value="c.code">
@@ -187,7 +187,7 @@ const canSave = computed(() => form.isDirty || form.photo != null);
                                     <select
                                         id="timezone"
                                         v-model="form.timezone"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                     >
                                         <option value="">Select timezone</option>
                                         <option v-for="tz in timezones" :key="tz.value" :value="tz.value">
@@ -202,7 +202,7 @@ const canSave = computed(() => form.isDirty || form.photo != null);
                                     <select
                                         id="tax_residence_country"
                                         v-model="form.tax_residence_country"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                     >
                                         <option value="">Select country</option>
                                         <option v-for="c in countries" :key="'t-' + c.code" :value="c.code">
@@ -217,7 +217,7 @@ const canSave = computed(() => form.isDirty || form.photo != null);
                                     <select
                                         id="contractor_subcategory"
                                         v-model="form.contractor_subcategory"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                     >
                                         <option value="">Select</option>
                                         <option value="individual">Individual</option>

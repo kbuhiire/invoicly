@@ -23,16 +23,52 @@ class SocialAuthController extends Controller
     {
         abort_unless(in_array($provider, self::SUPPORTED_PROVIDERS), 404);
 
-        $socialUser = Socialite::driver($provider)->user();
+        try {
+            $socialUser = Socialite::driver($provider)->user();
+        } catch (\Throwable $e) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'Unable to sign in with '.ucfirst($provider).'. Please try again.',
+            ]);
+        }
 
-        $user = User::firstOrCreate(
-            ['provider' => $provider, 'provider_id' => $socialUser->getId()],
-            [
+        $email = $socialUser->getEmail();
+
+        // Match an account already linked to this provider identity.
+        $user = User::where('provider', $provider)
+            ->where('provider_id', $socialUser->getId())
+            ->first();
+
+        // Otherwise fall back to matching an existing account by email and
+        // link this provider to it instead of creating a duplicate.
+        if ($user === null && $email !== null) {
+            $user = User::where('email', $email)->first();
+        }
+
+        if ($user !== null) {
+            // Backfill the provider link for accounts matched by email (or
+            // originally registered with a password).
+            if ($user->provider === null) {
+                $user->forceFill([
+                    'provider' => $provider,
+                    'provider_id' => $socialUser->getId(),
+                    'email_verified_at' => $user->email_verified_at ?? now(),
+                ])->save();
+            }
+        } else {
+            if ($email === null) {
+                return redirect()->route('login')->withErrors([
+                    'email' => 'Your '.ucfirst($provider).' account did not return an email address. Please register first or make your email public.',
+                ]);
+            }
+
+            $user = User::create([
                 'name' => $socialUser->getName() ?? $socialUser->getNickname() ?? 'User',
-                'email' => $socialUser->getEmail(),
+                'email' => $email,
+                'provider' => $provider,
+                'provider_id' => $socialUser->getId(),
                 'email_verified_at' => now(),
-            ]
-        );
+            ]);
+        }
 
         Auth::login($user, remember: true);
 

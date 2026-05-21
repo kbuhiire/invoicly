@@ -16,6 +16,24 @@ export default {
         extend: {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                mono: ['"JetBrains Mono"', ...defaultTheme.fontFamily.mono],
+            },
+            keyframes: {
+                'tile-rise': {
+                    '0%': { opacity: '0', transform: 'translateY(12px)' },
+                    '100%': { opacity: '1', transform: 'translateY(0)' },
+                },
+                shimmer: {
+                    '100%': { transform: 'translateX(100%)' },
+                },
+                'breathe': {
+                    '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+                    '50%': { opacity: '0.55', transform: 'scale(0.82)' },
+                },
+            },
+            animation: {
+                'tile-rise': 'tile-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both',
+                breathe: 'breathe 2.4s ease-in-out infinite',
             },
             colors: {
                 brand: {

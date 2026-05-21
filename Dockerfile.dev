@@ -1,72 +1,105 @@
-FROM php:8.3-fpm
+# syntax=docker/dockerfile:1
+
+# ---------------------------------------------------------------------------
+# Stage 1: PHP dependencies (composer)
+# --no-scripts because the pdo_pgsql/gd extensions aren't present here;
+# package:discover is run in the final stage instead.
+# ---------------------------------------------------------------------------
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-scripts --prefer-dist
+
+# ---------------------------------------------------------------------------
+# Stage 2: Build front-end assets (Vite/Ziggy needs vendor)
+# ---------------------------------------------------------------------------
+FROM node:20-alpine AS frontend
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+COPY --from=vendor /app/vendor ./vendor
+RUN npm run build
+
+# ---------------------------------------------------------------------------
+# Stage 3: Runtime — php-fpm only (nginx is an external k8s sidecar)
+# ---------------------------------------------------------------------------
+FROM php:8.3-fpm-alpine
 
 WORKDIR /var/www
 
-RUN apt-get update && apt-get install -y \
+# Runtime shared libraries + CA bundle (no build toolchain kept in this layer)
+RUN apk add --no-cache \
+    libpng \
+    libjpeg-turbo \
+    freetype \
+    libzip \
+    libpq \
+    sqlite-libs \
+    oniguruma \
+    ca-certificates \
+    && update-ca-certificates
+
+# Install PHP extensions using a throwaway virtual package of build deps,
+# then remove them in the same layer so nothing extra is committed.
+RUN apk add --no-cache --virtual .build-deps \
+    $PHPIZE_DEPS \
     libpng-dev \
-    libonig-dev \
-    libxml2-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
     libzip-dev \
-    libcurl4-openssl-dev \
-    libpq-dev \
-    sqlite3 \
-    libsqlite3-dev \
-    openssl \
-    git \
-    curl \
-    zip \
-    unzip
+    postgresql-dev \
+    sqlite-dev \
+    oniguruma-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
+        pdo \
+        pdo_sqlite \
+        pdo_pgsql \
+        mbstring \
+        exif \
+        pcntl \
+        bcmath \
+        gd \
+        zip \
+        opcache \
+    && apk del .build-deps
 
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-RUN docker-php-ext-install pdo pdo_sqlite pdo_pgsql mbstring exif pcntl bcmath gd zip
-
-# Install OPCache
-RUN docker-php-ext-install opcache
-
-# Use the default production configuration
+# Use the production php.ini baseline
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
-RUN apt update && apt install -y vim nodejs npm
+# Composer binary (used for package:discover / autoload dumping below)
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-COPY --from=composer:2.5.8 /usr/bin/composer /usr/bin/composer
+# Non-root runtime user matching the previous image (uid 1000, www-data + root groups)
+RUN addgroup deployer \
+    && adduser -D -u 1000 -h /home/deployer -G www-data deployer \
+    && addgroup deployer root \
+    && mkdir -p /home/deployer/.composer \
+    && chown -R deployer:deployer /home/deployer
 
-RUN useradd -G www-data,root -u 1000 -d /home/deployer deployer
+# Application code + built artifacts from earlier stages.
+# Ownership is set at copy time (--chown) to avoid a full-tree chmod layer
+# that would otherwise duplicate the entire app on disk.
+COPY --chown=deployer:www-data . .
+COPY --chown=deployer:www-data --from=vendor /app/vendor ./vendor
+COPY --chown=deployer:www-data --from=frontend /app/public/build ./public/build
 
-COPY . .
+# Make sure the SQLite DB exists, generate the package manifest skipped by
+# --no-scripts in the vendor stage, and make runtime-writable paths group-writable.
+RUN mkdir -p database && touch database/database.sqlite \
+    && php artisan package:discover --ansi \
+    && chown -R deployer:www-data storage bootstrap/cache database \
+    && chmod -R ug+rwx storage bootstrap/cache database
 
-# Make sure the SQLite DB file exists
-RUN mkdir -p database && touch database/database.sqlite
-
-RUN mkdir -p /home/deployer/.composer && \
-    chown -R deployer:deployer /home/deployer && \
-    chown -R deployer:deployer /var/www
-
-RUN composer install
-
-RUN npm ci
-RUN npm run build
-
-RUN rm -r node_modules
-
-#set proper file permissions
-RUN chown -R deployer:www-data /var/www && \
-    usermod -aG www-data deployer
-
-RUN find . -type f -exec chmod 664 {} \;
-
-RUN find . -type d -exec chmod 775 {} \;
-
-RUN chgrp -R www-data storage bootstrap/cache && \
-    chmod -R ug+rwx storage bootstrap/cache
-
+# PHP / FPM tuning (k8s)
 COPY .docker/k8s-php.ini /usr/local/etc/php/conf.d/custom-php.ini
 COPY .docker/k8s-opcache.ini /usr/local/etc/php/conf.d/opcache.ini
-
-RUN curl -o /etc/ssl/certs/ca-certificates.crt https://curl.se/ca/cacert.pem
 COPY .docker/k8s-curl-ca-certificates.ini /usr/local/etc/php/conf.d/curl-ca-certificates.ini
 RUN cat .docker/k8s-fpm.conf >> /usr/local/etc/php-fpm.d/www.conf
 
 EXPOSE 9000
 
 USER deployer
+
+CMD ["php-fpm"]

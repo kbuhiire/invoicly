@@ -462,7 +462,7 @@ function formatDate(iso) {
     <Head title="Profile settings" />
 
     <AuthenticatedLayout>
-        <div class="min-h-screen bg-zinc-100 pb-16">
+        <div class="min-h-screen bg-gray-100 pb-16">
             <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
                 <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Profile settings</h1>
 
@@ -1190,7 +1190,7 @@ function formatDate(iso) {
                                 <select
                                     v-else
                                     v-model="invoiceAddressForm.invoice_address.country_code"
-                                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                 >
                                     <option value="">Select a country</option>
                                     <option
@@ -1289,7 +1289,7 @@ function formatDate(iso) {
                                 <label class="block text-xs font-medium text-gray-500">Dial code</label>
                                 <select
                                     v-model="invoicePhoneForm.invoice_phone_dial_code"
-                                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                 >
                                     <option value="">Dial code</option>
                                     <option
@@ -1333,7 +1333,7 @@ function formatDate(iso) {
                                 <label class="text-xs font-medium text-gray-600">Invoice type</label>
                                 <select
                                     v-model="invoiceForm.invoice_type"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                                 >
                                     <option value="service">Service invoice</option>
                                     <option value="product">Product invoice</option>
@@ -1373,7 +1373,7 @@ function formatDate(iso) {
                         <textarea
                             v-model="noteDraft"
                             rows="5"
-                            class="mt-4 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-4 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                             placeholder="Optional note shown on PDF invoices"
                         />
                         <p v-if="invoiceForm.errors.invoice_note" class="mt-2 text-sm text-red-600">
