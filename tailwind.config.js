@@ -17,6 +17,7 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
                 mono: ['"JetBrains Mono"', ...defaultTheme.fontFamily.mono],
+                display: ['"Clash Display"', 'Figtree', ...defaultTheme.fontFamily.sans],
             },
             keyframes: {
                 'tile-rise': {

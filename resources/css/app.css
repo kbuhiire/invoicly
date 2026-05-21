@@ -21,6 +21,25 @@
         animation-delay: calc(var(--i, 0) * 70ms);
     }
 
+    /* Scroll-entry reveal: heavy fade-up with blur, spring-like easing. */
+    .reveal {
+        opacity: 0;
+        transform: translateY(3.5rem);
+        filter: blur(10px);
+        transition:
+            opacity 0.9s,
+            transform 0.9s,
+            filter 0.9s;
+        transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: transform, opacity;
+    }
+    .reveal.is-visible {
+        opacity: 1;
+        transform: none;
+        filter: blur(0);
+        will-change: auto;
+    }
+
     /* Shimmer sweep for skeleton loaders. */
     .skeleton {
         position: relative;
@@ -55,5 +74,11 @@
     .tile-enter {
         opacity: 1;
         transform: none;
+    }
+    .reveal {
+        opacity: 1;
+        transform: none;
+        filter: none;
+        transition: none;
     }
 }
