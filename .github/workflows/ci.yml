@@ -64,13 +64,13 @@ jobs:
       - name: Checkout Infrastructure repo
         uses: actions/checkout@v4
         with:
-          repository: Pivot-payts/Infrastructure
+          repository: Xanda-Labs/Infrastructure
           ref: main
           token: ${{ secrets.INFRA_REPO_PAT }}
 
       - name: Update image version in Infrastructure
         run: |
-          sed -i "s|\(image: ${REGISTRY_URL}/${GITHUB_REPO}-${BRANCH_NAME}:1\.0\.\)[0-9]\+|\1${GITHUB_RUN_NUMBER}|" dev/web/agent-portal/agent-portal-dev.yaml
+          sed -i "s|\(image: ${REGISTRY_URL}/${GITHUB_REPO}-${BRANCH_NAME}:1\.0\.\)[0-9]\+|\1${GITHUB_RUN_NUMBER}|" dev/php-apps/invoicly/invoicly-dev.yaml
         env:
           BRANCH_NAME: ${{ needs.docker-build-push.outputs.branch_name }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
