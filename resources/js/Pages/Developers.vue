@@ -31,6 +31,7 @@ const tryToken    = ref('');
 const tryParams   = ref({});
 const tryResponse = ref(null); // { status, statusText, body, ms }
 const tryLoading  = ref(false);
+const tokenError  = ref(false);
 
 onMounted(() => {
     tryToken.value = localStorage.getItem('inv_dev_token') ?? '';
@@ -38,6 +39,7 @@ onMounted(() => {
 
 watch(tryToken, (val) => {
     localStorage.setItem('inv_dev_token', val);
+    if (val.trim()) tokenError.value = false;
 });
 
 // Reset try params whenever endpoint changes
@@ -49,7 +51,7 @@ watch(activeEndpoint, () => {
 
 async function sendRequest() {
     if (!tryToken.value.trim()) {
-        alert('Please enter your API token first.');
+        tokenError.value = true;
         return;
     }
 
@@ -149,7 +151,7 @@ const apiEndpoints = [
         title: 'Overview',
         method: null,
         path: null,
-        description: 'The Invoicly API v1 enables seamless integration with your systems and Invoicly services. With it you can manage invoices programmatically, create and retrieve client records, download invoice PDFs, and automate your entire billing workflow.',
+        description: 'The Invoicly API v1 connects your systems directly to Invoicly. Manage invoices programmatically, create and retrieve client records, download invoice PDFs, and automate your entire billing workflow.',
         features: [
             'Create, read, update and delete invoices',
             'Manage client records',
@@ -1282,25 +1284,42 @@ const hasLineItems = computed(() =>
 <template>
     <Head title="Invoicly API — Developer Docs" />
 
-    <div class="flex h-screen flex-col overflow-hidden bg-[#0d1117] text-gray-100 antialiased">
+    <div
+        class="flex h-[100dvh] flex-col overflow-hidden text-gray-100 antialiased"
+        style="background: radial-gradient(55rem 38rem at 78% -8%, rgba(13,148,136,0.12), transparent 60%), radial-gradient(48rem 38rem at -5% 108%, rgba(45,212,191,0.07), transparent 60%), #070a0e;"
+    >
 
         <!-- ── HEADER ────────────────────────────────────────────────── -->
-        <header class="flex h-14 flex-shrink-0 items-center justify-between border-b border-gray-800 bg-[#0a0d12] px-6">
+        <header class="flex h-16 flex-shrink-0 items-center justify-between border-b border-white/[0.08] bg-white/[0.02] px-6 backdrop-blur-xl">
             <div class="flex items-center gap-4">
-                <Link href="/" class="flex items-center gap-2 text-base font-bold tracking-tight text-white">
-                    <span class="inline-flex h-6 w-6 items-center justify-center rounded bg-brand-600 text-xs font-black text-white">i</span>
+                <Link href="/" class="flex items-center gap-2 font-display text-base font-semibold tracking-tight text-white">
+                    <svg class="h-7 w-7" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="ivc-dev" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#2dd4bf" />
+                                <stop offset="1" stop-color="#0d9488" />
+                            </linearGradient>
+                        </defs>
+                        <rect width="32" height="32" rx="8" fill="url(#ivc-dev)" />
+                        <rect x="10" y="7" width="12" height="18" rx="2.5" fill="#ffffff" />
+                        <rect x="12.5" y="11" width="7" height="1.8" rx="0.9" fill="#5eead4" />
+                        <rect x="12.5" y="14.6" width="7" height="1.8" rx="0.9" fill="#99f6e4" />
+                        <path d="M12.7 19.6l1.9 1.9 4.4-4.4" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
                     invoicly
                 </Link>
-                <span class="text-gray-700">/</span>
+                <span class="text-white/20">/</span>
                 <span class="text-sm text-gray-400">API Reference</span>
-                <span class="rounded border border-gray-700 bg-gray-800 px-2 py-0.5 text-xs font-bold text-gray-400">v1</span>
-                <span class="hidden text-xs text-gray-700 sm:block">OAS 3.0.4</span>
+                <span class="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-0.5 font-mono text-xs font-medium text-gray-300">v1</span>
+                <span class="hidden font-mono text-xs text-gray-600 sm:block">OAS 3.0.4</span>
             </div>
-            <Link href="/" class="flex items-center gap-1.5 rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-400 transition hover:border-gray-600 hover:text-gray-200">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5">
-                    <path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clip-rule="evenodd" />
-                </svg>
+            <Link href="/" class="group flex items-center gap-2 rounded-full border border-white/10 py-1.5 pl-4 pr-1.5 text-xs font-medium text-gray-300 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-white/20 hover:bg-white/[0.04] active:scale-[0.97]">
                 Back to Invoicly
+                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:-translate-x-0.5">
+                    <svg viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5">
+                        <path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clip-rule="evenodd" />
+                    </svg>
+                </span>
             </Link>
         </header>
 
@@ -1308,7 +1327,7 @@ const hasLineItems = computed(() =>
         <div class="flex min-h-0 flex-1 overflow-hidden">
 
             <!-- LEFT SIDEBAR -->
-            <aside class="hidden w-56 flex-shrink-0 overflow-y-auto border-r border-gray-800 bg-[#0a0d12] py-5 lg:block">
+            <aside class="hidden w-56 flex-shrink-0 overflow-y-auto border-r border-white/[0.08] bg-[#0a0d12] py-5 lg:block">
                 <nav>
                     <div v-for="group in apiGroups" :key="group.id" class="mb-5 px-3">
                         <p class="mb-2 px-3 text-xs font-semibold uppercase tracking-widest text-gray-600">{{ group.label }}</p>
@@ -1318,8 +1337,8 @@ const hasLineItems = computed(() =>
                                     @click="activeEndpoint = ep.id"
                                     class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition"
                                     :class="activeEndpoint === ep.id
-                                        ? 'bg-gray-800 text-white'
-                                        : 'text-gray-500 hover:bg-gray-800/40 hover:text-gray-200'"
+                                        ? 'bg-white/10 text-white'
+                                        : 'text-gray-500 hover:bg-white/[0.04] hover:text-gray-200'"
                                 >
                                     <span
                                         v-if="ep.method"
@@ -1349,8 +1368,8 @@ const hasLineItems = computed(() =>
                         v-for="ep in apiEndpoints.filter(e => e.method)"
                         :key="ep.id"
                         @click="activeEndpoint = ep.id"
-                        class="flex items-center gap-1.5 rounded-lg border border-gray-800 bg-gray-900 px-3 py-1.5 text-xs transition"
-                        :class="activeEndpoint === ep.id ? 'border-brand-700 text-white' : 'text-gray-400 hover:border-gray-700 hover:text-gray-200'"
+                        class="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-gray-900 px-3 py-1.5 text-xs transition"
+                        :class="activeEndpoint === ep.id ? 'border-brand-700 text-white' : 'text-gray-400 hover:border-white/10 hover:text-gray-200'"
                     >
                         <span class="font-bold" :class="{
                             'text-blue-400': ep.method === 'GET',
@@ -1376,14 +1395,14 @@ const hasLineItems = computed(() =>
                             }"
                         >{{ currentEndpoint.method }}</span>
                         <code v-if="currentEndpoint.path" class="font-mono text-base text-white">{{ currentEndpoint.path }}</code>
-                        <h1 v-else class="text-2xl font-bold text-white">{{ currentEndpoint.title }}</h1>
+                        <h1 v-else class="font-display text-2xl font-semibold tracking-tight text-white">{{ currentEndpoint.title }}</h1>
                         <span
                             v-if="currentEndpoint.ability"
-                            class="ml-auto rounded-full border border-purple-800 bg-purple-950/40 px-2.5 py-0.5 font-mono text-xs text-purple-400"
+                            class="ml-auto rounded-full border border-brand-800 bg-brand-950/40 px-2.5 py-0.5 font-mono text-xs text-brand-300"
                         >{{ currentEndpoint.ability }}</span>
                     </div>
 
-                    <h2 v-if="currentEndpoint.path" class="mb-4 text-xl font-bold text-white">{{ currentEndpoint.title }}</h2>
+                    <h2 v-if="currentEndpoint.path" class="mb-4 font-display text-xl font-semibold tracking-tight text-white">{{ currentEndpoint.title }}</h2>
 
                     <p class="mb-6 max-w-2xl leading-relaxed text-gray-400">{{ currentEndpoint.description }}</p>
 
@@ -1411,7 +1430,7 @@ const hasLineItems = computed(() =>
                     <!-- Auth example header block -->
                     <div v-if="currentEndpoint.id === 'auth'" class="mb-6">
                         <h3 class="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-600">Example Authorization Header</h3>
-                        <div class="rounded-lg border border-gray-800 bg-gray-900 px-4 py-3 font-mono text-xs text-gray-300">
+                        <div class="rounded-lg border border-white/[0.08] bg-gray-900 px-4 py-3 font-mono text-xs text-gray-300">
                             Authorization: Bearer YOUR_API_TOKEN
                         </div>
                     </div>
@@ -1419,10 +1438,10 @@ const hasLineItems = computed(() =>
                     <!-- Parameters table -->
                     <div v-if="currentEndpoint.params.length > 0" class="mb-8">
                         <h3 class="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-600">Parameters</h3>
-                        <div class="overflow-hidden rounded-lg border border-gray-800">
+                        <div class="overflow-hidden rounded-lg border border-white/[0.08]">
                             <table class="w-full text-sm">
                                 <thead>
-                                    <tr class="border-b border-gray-800 bg-gray-900/80">
+                                    <tr class="border-b border-white/[0.08] bg-gray-900/80">
                                         <th class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Name</th>
                                         <th class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">In</th>
                                         <th class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Type</th>
@@ -1449,8 +1468,8 @@ const hasLineItems = computed(() =>
                     <!-- Response example -->
                     <div v-if="currentEndpoint.response">
                         <h3 class="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-600">Response</h3>
-                        <div class="overflow-hidden rounded-lg border border-gray-800">
-                            <div class="flex items-center gap-2 border-b border-gray-800 bg-gray-900/80 px-4 py-2.5">
+                        <div class="overflow-hidden rounded-lg border border-white/[0.08]">
+                            <div class="flex items-center gap-2 border-b border-white/[0.08] bg-gray-900/80 px-4 py-2.5">
                                 <span class="rounded-full bg-green-900/60 px-2.5 py-0.5 text-xs font-semibold text-green-400">200 OK</span>
                                 <span class="text-xs text-gray-600">application/json</span>
                             </div>
@@ -1461,26 +1480,26 @@ const hasLineItems = computed(() =>
             </div>
 
             <!-- RIGHT PANEL: Code + Try It -->
-            <aside class="hidden w-88 flex-shrink-0 overflow-y-auto border-l border-gray-800 bg-[#0a0d12] xl:block" style="width: 22rem;">
+            <aside class="hidden w-88 flex-shrink-0 overflow-y-auto border-l border-white/[0.08] bg-[#0a0d12] xl:block" style="width: 22rem;">
 
                 <!-- Server info -->
-                <div class="border-b border-gray-800 p-4">
+                <div class="border-b border-white/[0.08] p-4">
                     <div class="mb-3">
                         <p class="mb-1.5 text-xs font-semibold uppercase tracking-widest text-gray-600">Server</p>
-                        <div class="rounded border border-gray-700 bg-gray-900 px-3 py-2.5 font-mono text-xs text-gray-300">
+                        <div class="rounded border border-white/10 bg-gray-900 px-3 py-2.5 font-mono text-xs text-gray-300">
                             https://app.invoicly.io
                         </div>
                     </div>
                     <div>
                         <p class="mb-1.5 text-xs font-semibold uppercase tracking-widest text-gray-600">API Server</p>
-                        <div class="rounded border border-gray-700 bg-gray-900 px-3 py-2.5 font-mono text-xs text-gray-500">
+                        <div class="rounded border border-white/10 bg-gray-900 px-3 py-2.5 font-mono text-xs text-gray-500">
                             /api/v1
                         </div>
                     </div>
                 </div>
 
                 <!-- Tab switcher -->
-                <div class="flex border-b border-gray-800">
+                <div class="flex border-b border-white/[0.08]">
                     <button
                         @click="rightTab = 'code'"
                         class="flex-1 py-2.5 text-xs font-semibold transition"
@@ -1509,15 +1528,15 @@ const hasLineItems = computed(() =>
                                 @click="activeLang = lang.id"
                                 class="rounded px-3 py-1.5 text-xs font-medium transition"
                                 :class="activeLang === lang.id
-                                    ? 'bg-gray-700 text-white'
+                                    ? 'bg-white/10 text-white'
                                     : 'text-gray-500 hover:text-gray-300'"
                             >{{ lang.label }}</button>
                         </div>
                     </div>
 
                     <!-- Code block with copy button -->
-                    <div v-if="currentCode" class="relative rounded-lg border border-gray-800 bg-gray-900">
-                        <div class="flex items-center justify-between border-b border-gray-800 px-3 py-2">
+                    <div v-if="currentCode" class="relative rounded-lg border border-white/[0.08] bg-gray-900">
+                        <div class="flex items-center justify-between border-b border-white/[0.08] px-3 py-2">
                             <span class="text-xs text-gray-600">{{ langs.find(l => l.id === activeLang)?.label }}</span>
                             <button
                                 @click="copyCode(currentCode)"
@@ -1536,7 +1555,7 @@ const hasLineItems = computed(() =>
                         </div>
                         <pre class="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-gray-300 whitespace-pre-wrap break-words">{{ currentCode }}</pre>
                     </div>
-                    <div v-else class="rounded-lg border border-gray-800 bg-gray-900 p-6 text-center">
+                    <div v-else class="rounded-lg border border-white/[0.08] bg-gray-900 p-6 text-center">
                         <p class="text-xs text-gray-600">Select an endpoint to see a code example</p>
                     </div>
                 </div>
@@ -1545,7 +1564,7 @@ const hasLineItems = computed(() =>
                 <div v-if="rightTab === 'try'" class="p-4">
 
                     <!-- No path = not executable -->
-                    <div v-if="!currentEndpoint.path" class="rounded-lg border border-gray-800 bg-gray-900 p-5 text-center">
+                    <div v-if="!currentEndpoint.path" class="rounded-lg border border-white/[0.08] bg-gray-900 p-5 text-center">
                         <p class="text-xs text-gray-500">Select an endpoint from the sidebar to try it live.</p>
                     </div>
 
@@ -1569,8 +1588,10 @@ const hasLineItems = computed(() =>
                                 v-model="tryToken"
                                 type="password"
                                 placeholder="Bearer token from Settings → API Tokens"
-                                class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 font-mono text-xs text-gray-300 placeholder-gray-700 outline-none transition focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                                class="w-full rounded-lg border bg-gray-900 px-3 py-2 font-mono text-xs text-gray-300 placeholder-gray-700 outline-none transition focus:ring-1"
+                                :class="tokenError ? 'border-rose-500/60 focus:border-rose-500 focus:ring-rose-500' : 'border-white/10 focus:border-brand-600 focus:ring-brand-600'"
                             />
+                            <p v-if="tokenError" class="mt-1.5 text-xs text-rose-400">Enter your API token to send a request.</p>
                         </div>
 
                         <!-- Parameter inputs -->
@@ -1581,13 +1602,13 @@ const hasLineItems = computed(() =>
                                     <span class="font-mono text-gray-300">{{ param.name }}</span>
                                     <span class="text-gray-700">{{ param.type }}</span>
                                     <span v-if="param.required" class="text-red-500">*</span>
-                                    <span class="ml-auto rounded-full border border-gray-800 px-1.5 text-gray-700">{{ param.in }}</span>
+                                    <span class="ml-auto rounded-full border border-white/[0.08] px-1.5 text-gray-700">{{ param.in }}</span>
                                 </label>
                                 <input
                                     v-model="tryParams[param.name]"
                                     type="text"
                                     :placeholder="param.description"
-                                    class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 font-mono text-xs text-gray-300 placeholder-gray-700 outline-none transition focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                                    class="w-full rounded-lg border border-white/10 bg-gray-900 px-3 py-2 font-mono text-xs text-gray-300 placeholder-gray-700 outline-none transition focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
                                 />
                             </div>
                         </div>
@@ -1598,13 +1619,13 @@ const hasLineItems = computed(() =>
                                 <span class="font-mono text-gray-300">line_items</span>
                                 <span class="text-gray-700">array</span>
                                 <span class="text-red-500">*</span>
-                                <span class="ml-auto rounded-full border border-gray-800 px-1.5 text-gray-700">body</span>
+                                <span class="ml-auto rounded-full border border-white/[0.08] px-1.5 text-gray-700">body</span>
                             </label>
                             <textarea
                                 v-model="tryParams['line_items_raw']"
                                 rows="5"
                                 placeholder='[{"description":"Service","quantity":1,"unit_price":100}]'
-                                class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 font-mono text-xs text-gray-300 placeholder-gray-700 outline-none transition focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                                class="w-full rounded-lg border border-white/10 bg-gray-900 px-3 py-2 font-mono text-xs text-gray-300 placeholder-gray-700 outline-none transition focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
                             ></textarea>
                         </div>
 
@@ -1625,8 +1646,8 @@ const hasLineItems = computed(() =>
                         </button>
 
                         <!-- Response area -->
-                        <div v-if="tryResponse" class="mt-4 overflow-hidden rounded-lg border border-gray-800">
-                            <div class="flex items-center justify-between border-b border-gray-800 bg-gray-900 px-3 py-2">
+                        <div v-if="tryResponse" class="mt-4 overflow-hidden rounded-lg border border-white/[0.08]">
+                            <div class="flex items-center justify-between border-b border-white/[0.08] bg-gray-900 px-3 py-2">
                                 <div class="flex items-center gap-2">
                                     <span
                                         class="rounded-full px-2.5 py-0.5 text-xs font-semibold"

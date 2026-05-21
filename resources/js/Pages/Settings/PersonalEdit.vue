@@ -63,10 +63,10 @@ const canSave = computed(() => form.isDirty || form.photo != null);
     <Head title="Edit personal details" />
 
     <AuthenticatedLayout>
-        <div class="min-h-screen bg-gray-100 pb-16">
+        <div class="pb-16">
             <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Edit personal details</h1>
+                    <h1 class="font-display text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">Edit personal details</h1>
                     <div class="flex items-center gap-3">
                         <Link
                             :href="route('settings.index', { tab: 'personal' })"
@@ -82,7 +82,7 @@ const canSave = computed(() => form.isDirty || form.photo != null);
 
                 <div class="mt-8 grid gap-6 lg:grid-cols-3">
                     <div class="space-y-6 lg:col-span-2">
-                        <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                        <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                             <h2 class="text-lg font-semibold text-gray-900">Personal information</h2>
 
                             <div
@@ -268,7 +268,7 @@ const canSave = computed(() => form.isDirty || form.photo != null);
                     </div>
 
                     <div class="space-y-6">
-                        <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                        <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                             <div class="flex flex-col items-center text-center">
                                 <img
                                     v-if="photoPreview || existingPhotoUrl"
@@ -313,7 +313,7 @@ const canSave = computed(() => form.isDirty || form.photo != null);
                             </div>
                         </div>
 
-                        <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                        <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                             <div class="flex gap-3">
                                 <div
                                     class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600"

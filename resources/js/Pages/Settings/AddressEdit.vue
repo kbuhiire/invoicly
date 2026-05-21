@@ -55,10 +55,10 @@ const canSave = computed(() => form.isDirty);
     <Head title="Edit address" />
 
     <AuthenticatedLayout>
-        <div class="min-h-screen bg-gray-100 pb-16">
+        <div class="pb-16">
             <div class="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Edit address</h1>
+                    <h1 class="font-display text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">Edit address</h1>
                     <div class="flex items-center gap-3">
                         <Link
                             :href="route('settings.index', { tab: 'personal' })"
@@ -73,7 +73,7 @@ const canSave = computed(() => form.isDirty);
                 </div>
 
                 <form class="mt-8 space-y-8" @submit.prevent="submit">
-                    <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                         <h2 class="text-lg font-semibold text-gray-900">Personal address</h2>
                         <div class="mt-6 space-y-4">
                             <div>
@@ -150,7 +150,7 @@ const canSave = computed(() => form.isDirty);
                         </div>
                     </div>
 
-                    <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                         <h2 class="text-lg font-semibold text-gray-900">Postal address (optional)</h2>
                         <div class="mt-6 space-y-4">
                             <div>

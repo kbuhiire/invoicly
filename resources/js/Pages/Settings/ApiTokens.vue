@@ -97,7 +97,7 @@ function toggleAbility(id) {
             <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
                 <!-- Introduction -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="bg-white rounded-3xl border border-gray-200/60 p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                     <h3 class="text-base font-semibold text-gray-900 mb-1">Personal API Tokens</h3>
                     <p class="text-sm text-gray-600">
                         Tokens authenticate as <strong>your account</strong>. They let external systems — such as
@@ -110,7 +110,7 @@ function toggleAbility(id) {
                 </div>
 
                 <!-- Token list -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
+                <div class="bg-white rounded-3xl border border-gray-200/60 divide-y divide-gray-100 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                     <div v-if="tokens.length === 0" class="p-6 text-sm text-gray-500 text-center">
                         No tokens yet. Create one to start integrating.
                     </div>
@@ -146,7 +146,7 @@ function toggleAbility(id) {
                 </div>
 
                 <!-- Abilities reference -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="bg-white rounded-3xl border border-gray-200/60 p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                     <h3 class="text-sm font-semibold text-gray-900 mb-3">Available abilities</h3>
                     <dl class="space-y-2">
                         <div v-for="ability in abilities" :key="ability.id" class="flex gap-3">

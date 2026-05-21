@@ -169,7 +169,7 @@ function toggleRowMenu(id) {
     <Head title="Invoices" />
 
     <AuthenticatedLayout>
-        <div class="min-h-screen bg-gray-100 pb-16">
+        <div class="pb-16">
             <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
                 <div
                     v-if="page.props.flash?.success"
@@ -178,9 +178,10 @@ function toggleRowMenu(id) {
                     {{ page.props.flash.success }}
                 </div>
                 <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <h1 class="text-3xl font-bold tracking-tight text-gray-900">
-                        Invoices
-                    </h1>
+                    <div>
+                        <h1 class="font-display text-3xl font-semibold tracking-tight text-gray-900">Invoices</h1>
+                        <p class="mt-1 text-sm text-gray-500">Manage and track every invoice you've issued.</p>
+                    </div>
                     <div class="flex items-center gap-2">
                         <button
                             type="button"
@@ -293,10 +294,10 @@ function toggleRowMenu(id) {
                     </div>
                 </div>
 
-                <div class="mb-6 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+                <div class="mb-6 overflow-hidden rounded-3xl border border-gray-200/60 bg-white shadow-[0_20px_40px_-24px_rgba(15,23,42,0.15)]">
                     <button
                         type="button"
-                        class="flex w-full items-center justify-between px-5 py-4 text-left text-sm font-semibold text-gray-900"
+                        class="flex w-full items-center justify-between px-6 py-4 text-left text-sm font-semibold text-gray-900"
                         @click="balanceOpen = !balanceOpen"
                     >
                         Balance summary
@@ -308,36 +309,29 @@ function toggleRowMenu(id) {
                             <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
                         </svg>
                     </button>
-                    <div v-show="balanceOpen" class="grid gap-4 border-t border-gray-100 px-5 pb-5 pt-4 sm:grid-cols-2">
-                        <div class="rounded-xl border border-gray-100 bg-gray-50 p-5">
-                            <div class="mb-2 text-2xl font-semibold text-gray-900 tabular-nums">
+                    <div v-show="balanceOpen" class="grid gap-4 border-t border-gray-100 px-6 pb-6 pt-4 sm:grid-cols-2">
+                        <div class="rounded-2xl border border-gray-200/60 bg-gray-50/70 p-5">
+                            <div class="mb-2 font-mono text-2xl font-semibold tabular-nums text-gray-900">
                                 {{ formatMoney(balance.paid_total, balance.currency) }}
                             </div>
-                            <span
-                                class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                style="background: #e6f4ea; color: #1e8e3e"
-                            >
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                                 Paid
                             </span>
                         </div>
-                        <div class="rounded-xl border border-gray-100 bg-gray-50 p-5">
-                            <div
-                                class="mb-2 text-2xl font-semibold"
-                                style="color: #7c2d12"
-                            >
+                        <div class="rounded-2xl border border-gray-200/60 bg-gray-50/70 p-5">
+                            <div class="mb-2 font-mono text-2xl font-semibold tabular-nums text-gray-900">
                                 {{ formatMoney(balance.awaiting_total, balance.currency) }}
                             </div>
-                            <span
-                                class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                style="background: #fef7e0; color: #b05a00"
-                            >
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+                                <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                                 Awaiting payment
                             </span>
                         </div>
                     </div>
                 </div>
 
-                <div class="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+                <div class="overflow-hidden rounded-3xl border border-gray-200/60 bg-white shadow-[0_20px_40px_-24px_rgba(15,23,42,0.15)]">
                     <div class="flex items-center justify-between border-b border-gray-100 px-5 py-3">
                         <p class="text-sm text-gray-600">
                             Total of {{ invoices.total }}

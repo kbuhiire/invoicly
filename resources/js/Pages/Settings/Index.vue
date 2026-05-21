@@ -462,20 +462,21 @@ function formatDate(iso) {
     <Head title="Profile settings" />
 
     <AuthenticatedLayout>
-        <div class="min-h-screen bg-gray-100 pb-16">
+        <div class="pb-16">
             <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-                <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Profile settings</h1>
+                <h1 class="font-display text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">Profile settings</h1>
+                <p class="mt-1 text-sm text-gray-500">Manage your details, address, and invoice defaults.</p>
 
-                <nav class="mt-6 flex gap-6 overflow-x-auto border-b border-gray-200 pb-px">
+                <nav class="mt-6 flex gap-1.5 overflow-x-auto pb-1">
                     <Link
                         v-for="t in tabs"
                         :key="t.id"
                         :href="route('settings.index', { tab: t.id })"
-                        class="shrink-0 border-b-2 pb-3 text-sm font-medium transition-colors"
+                        class="shrink-0 rounded-full px-4 py-2 text-sm transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
                         :class="
                             activeTab === t.id
-                                ? 'border-sky-600 text-sky-700'
-                                : 'border-transparent text-gray-500 hover:text-gray-800'
+                                ? 'bg-brand-600/10 font-semibold text-brand-700'
+                                : 'font-medium text-gray-500 hover:bg-gray-900/5 hover:text-gray-900'
                         "
                     >
                         {{ t.label }}
@@ -504,7 +505,7 @@ function formatDate(iso) {
                     </div>
                     <div class="grid gap-6 lg:grid-cols-3">
                         <div class="space-y-6 lg:col-span-2">
-                            <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                            <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                                 <div class="flex items-start justify-between gap-4">
                                     <h2 class="text-lg font-semibold text-gray-900">Personal details</h2>
                                     <Link
@@ -626,7 +627,7 @@ function formatDate(iso) {
                                 </dl>
                             </div>
 
-                            <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                            <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                                 <h2 class="text-lg font-semibold text-gray-900">Address</h2>
                                 <div class="mt-6 space-y-6">
                                     <div class="relative rounded-lg bg-gray-50 p-4 pr-12">
@@ -686,7 +687,7 @@ function formatDate(iso) {
                         </div>
 
                         <div class="space-y-6">
-                            <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                            <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                                 <h2 class="text-lg font-semibold text-gray-900">Profile photo</h2>
                                 <p class="mt-1 text-sm text-gray-500">
                                     Your photo will be visible on invoices and in your account.
@@ -758,7 +759,7 @@ function formatDate(iso) {
 
                     <div class="grid gap-6 lg:grid-cols-5">
                         <div class="space-y-6 lg:col-span-3">
-                            <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                            <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                                 <h2 class="text-lg font-semibold text-gray-900">Invoice details</h2>
                                 <div
                                     class="mt-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900"
@@ -800,7 +801,7 @@ function formatDate(iso) {
                                 </dl>
                             </div>
 
-                            <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                            <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                                 <h2 class="text-lg font-semibold text-gray-900">Additional details</h2>
                                 <div class="mt-6 space-y-4">
                                     <div class="relative rounded-lg bg-gray-50 p-4 pr-12">
@@ -921,7 +922,7 @@ function formatDate(iso) {
                                 </div>
                             </div>
 
-                            <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                            <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                                 <div class="flex items-center justify-between gap-4">
                                     <h2 class="text-lg font-semibold text-gray-900">Invoice note</h2>
                                     <button
@@ -944,7 +945,7 @@ function formatDate(iso) {
                                 </p>
                             </div>
 
-                            <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                            <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                                 <div class="flex items-center justify-between gap-4">
                                     <h2 class="text-lg font-semibold text-gray-900">Signature</h2>
                                     <button
@@ -991,7 +992,7 @@ function formatDate(iso) {
                         </div>
 
                         <div class="space-y-6 lg:col-span-2">
-                            <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                            <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                                 <div class="flex items-start justify-between gap-3">
                                     <h2 class="text-lg font-semibold text-gray-900">External Invoice settings</h2>
                                     <button
@@ -1044,7 +1045,7 @@ function formatDate(iso) {
                                 </div>
                             </div>
 
-                            <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                            <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                                 <div class="flex gap-2">
                                     <div
                                         class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700"
@@ -1498,16 +1499,16 @@ function formatDate(iso) {
                 </Modal>
 
                 <div v-show="activeTab === 'account'" class="mt-8 space-y-6">
-                    <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                         <UpdatePasswordForm />
                     </div>
-                    <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                         <DeleteUserForm />
                     </div>
                 </div>
 
                 <div v-show="activeTab === 'verification'" class="mt-8">
-                    <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                         <p class="text-sm text-gray-600">
                             Identity verification is not available in this app yet. Check back later.
                         </p>
@@ -1515,20 +1516,20 @@ function formatDate(iso) {
                 </div>
 
                 <div v-show="activeTab === 'payment'" class="mt-8">
-                    <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                         <p class="text-sm text-gray-600">Payment methods will be available here in a future update.</p>
                     </div>
                 </div>
 
                 <div v-show="activeTab === 'bookkeeping'" class="mt-8">
-                    <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                         <p class="text-sm text-gray-600">Bookkeeping tools will be available here in a future update.</p>
                     </div>
                 </div>
 
                 <!-- ── Automation tab ─────────────────────────────────────── -->
                 <div v-show="activeTab === 'automation'" class="mt-8 space-y-6">
-                    <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                         <div class="flex items-center justify-between gap-4">
                             <div>
                                 <h2 class="text-lg font-semibold text-gray-900">Recurring invoices</h2>
@@ -1620,7 +1621,7 @@ function formatDate(iso) {
                     </div>
 
                     <!-- How it works -->
-                    <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
                         <h3 class="text-sm font-semibold text-gray-900">How automations work</h3>
                         <ul class="mt-3 space-y-2 text-sm text-gray-600 list-disc list-inside">
                             <li>Pick any existing invoice as a template — its line items, amounts, and client are reused.</li>
