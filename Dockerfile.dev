@@ -8,20 +8,18 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libzip-dev \
     libcurl4-openssl-dev \
+    libpq-dev \
     sqlite3 \
     libsqlite3-dev \
     openssl \
     git \
     curl \
     zip \
-    docker-php-ext-install \
-    pdo \
-    pdo_pgsql \
     unzip
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-install pdo pdo_sqlite mbstring exif pcntl bcmath gd zip
+RUN docker-php-ext-install pdo pdo_sqlite pdo_pgsql mbstring exif pcntl bcmath gd zip
 
 # Install OPCache
 RUN docker-php-ext-install opcache
