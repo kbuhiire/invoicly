@@ -9,6 +9,8 @@ import RevenueChart from '@/Components/Dashboard/RevenueChart.vue';
 import StatusRing from '@/Components/Dashboard/StatusRing.vue';
 import RecentInvoices from '@/Components/Dashboard/RecentInvoices.vue';
 import TopClients from '@/Components/Dashboard/TopClients.vue';
+import CashFlowForecast from '@/Components/Dashboard/CashFlowForecast.vue';
+import CreditInsights from '@/Components/Dashboard/CreditInsights.vue';
 import DashboardSkeleton from '@/Components/Dashboard/DashboardSkeleton.vue';
 import EmptyDashboard from '@/Components/Dashboard/EmptyDashboard.vue';
 
@@ -20,6 +22,8 @@ const props = defineProps({
     status_breakdown: { type: Object, required: true },
     recent_invoices: { type: Array, required: true },
     top_clients: { type: Array, required: true },
+    risky_clients: { type: Array, default: () => [] },
+    cash_flow_forecast: { type: Object, default: () => ({ buckets: [], horizon_weeks: 12, total_expected: 0, overdue_expected: 0, overdue_count: 0, currency: 'USD' }) },
 });
 
 const loading = ref(false);
@@ -208,6 +212,23 @@ const revenueDelta = computed(() => {
                             :style="{ '--i': 5 }"
                         >
                             <TopClients :clients="top_clients" :currency="preferred_currency" />
+                        </div>
+                    </div>
+
+                    <!-- Row 4: cash-flow forecast + credit insights -->
+                    <div class="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr]">
+                        <div
+                            class="tile-enter rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(13,148,136,0.18)] sm:p-8"
+                            :style="{ '--i': 6 }"
+                        >
+                            <CashFlowForecast :forecast="cash_flow_forecast" />
+                        </div>
+
+                        <div
+                            class="tile-enter rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(13,148,136,0.18)] sm:p-8"
+                            :style="{ '--i': 7 }"
+                        >
+                            <CreditInsights :clients="risky_clients" />
                         </div>
                     </div>
                 </div>

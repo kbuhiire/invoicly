@@ -2,8 +2,13 @@
 
 namespace App\Providers;
 
+use App\Events\InvoiceReconciled;
+use App\Events\PaymentReceived;
+use App\Listeners\PublishWebhookEvents;
+use App\Listeners\RecalculateClientBehaviorOnPayment;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
@@ -33,6 +38,13 @@ class AppServiceProvider extends ServiceProvider
 
         Vite::prefetch(concurrency: 3);
         $this->configureRateLimiting();
+
+        // Refresh a client's credit/behaviour aggregates as soon as a payment lands.
+        Event::listen(PaymentReceived::class, RecalculateClientBehaviorOnPayment::class);
+
+        // Fan domain events out to users' outbound webhook subscriptions (Phase 5).
+        Event::listen(PaymentReceived::class, [PublishWebhookEvents::class, 'onPaymentReceived']);
+        Event::listen(InvoiceReconciled::class, [PublishWebhookEvents::class, 'onInvoiceReconciled']);
     }
 
     private function configureRateLimiting(): void

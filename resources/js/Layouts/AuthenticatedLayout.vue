@@ -42,6 +42,7 @@ const invoicesActive = computed(
                     <div class="hidden items-center gap-1 sm:flex">
                         <NavLink :href="route('dashboard')" :active="route().current('dashboard')">Dashboard</NavLink>
                         <NavLink :href="route('invoices.index', { segment: 'external' })" :active="invoicesActive">Invoices</NavLink>
+                        <NavLink :href="route('reconciliation.index')" :active="route().current('reconciliation.index')">Payments</NavLink>
                     </div>
                 </div>
 
@@ -74,6 +75,10 @@ const invoicesActive = computed(
                                 <DropdownLink :href="route('settings.api-tokens.index')">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z" /></svg>
                                     API tokens
+                                </DropdownLink>
+                                <DropdownLink :href="route('settings.webhooks.index')">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.348 14.652a3.75 3.75 0 0 1 0-5.304m5.304 0a3.75 3.75 0 0 1 0 5.304m-7.425 2.121a6.75 6.75 0 0 1 0-9.546m9.546 0a6.75 6.75 0 0 1 0 9.546M12 12.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" /></svg>
+                                    Webhooks
                                 </DropdownLink>
                             </div>
                             <div class="border-t border-gray-100 py-1">
@@ -111,6 +116,7 @@ const invoicesActive = computed(
                     <div class="space-y-1">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">Dashboard</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('invoices.index', { segment: 'external' })" :active="invoicesActive">Invoices</ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('reconciliation.index')" :active="route().current('reconciliation.index')">Payments</ResponsiveNavLink>
                     </div>
                     <div class="mt-3 border-t border-gray-100 pt-3">
                         <div class="flex items-center gap-3 px-4 pb-2">
@@ -123,6 +129,7 @@ const invoicesActive = computed(
                         <div class="space-y-1">
                             <ResponsiveNavLink :href="route('settings.index', { tab: 'personal' })">Profile</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('settings.api-tokens.index')">API tokens</ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('settings.webhooks.index')">Webhooks</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('logout')" method="post" as="button">Log out</ResponsiveNavLink>
                         </div>
                     </div>

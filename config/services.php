@@ -35,6 +35,24 @@ return [
         ],
     ],
 
+    // SMS + WhatsApp reminders share ONE Twilio integration (same Account SID /
+    // Auth Token, Messages API). SMS sends to a bare E.164 number; WhatsApp uses
+    // the `whatsapp:` address prefix. Business-initiated WhatsApp reminders fall
+    // outside the 24h session window, so they MUST use a pre-approved Content
+    // template (content_sids below) rather than free-form text.
+    'twilio' => [
+        'sid' => env('TWILIO_ACCOUNT_SID'),
+        'token' => env('TWILIO_AUTH_TOKEN'),
+        'from' => env('TWILIO_SMS_FROM'),                 // E.164, SMS sender
+        'whatsapp_from' => env('TWILIO_WHATSAPP_FROM'),   // E.164, WhatsApp-enabled sender
+        'content_sids' => [
+            'upcoming' => env('TWILIO_WHATSAPP_CONTENT_UPCOMING'),
+            'overdue' => env('TWILIO_WHATSAPP_CONTENT_OVERDUE'),
+        ],
+        // Twilio posts delivery/read status here (handled by Phase 5 webhooks).
+        'status_callback' => env('TWILIO_STATUS_CALLBACK'),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),

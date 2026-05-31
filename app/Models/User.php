@@ -81,6 +81,21 @@ class User extends Authenticatable
         return $this->hasMany(RecurringInvoice::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function integrations(): HasMany
+    {
+        return $this->hasMany(Integration::class);
+    }
+
+    public function webhookSubscriptions(): HasMany
+    {
+        return $this->hasMany(WebhookSubscription::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

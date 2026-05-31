@@ -20,6 +20,12 @@ class ApiTokenController extends Controller
         ['id' => 'invoices:write', 'label' => 'Write invoices', 'description' => 'Create, update and delete invoices'],
         ['id' => 'clients:read', 'label' => 'Read clients', 'description' => 'List and view invoice recipients'],
         ['id' => 'clients:write', 'label' => 'Write clients', 'description' => 'Create invoice recipients'],
+        ['id' => 'payments:read', 'label' => 'Read payments', 'description' => 'List payments and reconciliation status'],
+        ['id' => 'payments:write', 'label' => 'Write payments', 'description' => 'Record payments and push transactions for auto-reconciliation'],
+        ['id' => 'clients:score', 'label' => 'Read client credit', 'description' => 'View client credit scores and payment-behaviour insights'],
+        ['id' => 'forecasts:read', 'label' => 'Read forecasts', 'description' => 'Access cash-flow forecasts'],
+        ['id' => 'webhooks:read', 'label' => 'Read webhooks', 'description' => 'List outbound webhook subscriptions'],
+        ['id' => 'webhooks:manage', 'label' => 'Manage webhooks', 'description' => 'Create and delete outbound webhook subscriptions'],
     ];
 
     public function index(Request $request): Response
