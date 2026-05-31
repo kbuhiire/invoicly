@@ -4,11 +4,14 @@ use App\Http\Controllers\ApiTokenController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentMethodController;
+use App\Http\Controllers\ReconciliationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecurringInvoiceController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserPreferredCurrencyController;
+use App\Http\Controllers\WebhookSettingsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -34,6 +37,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('invoices/{invoice}/attachment', [InvoiceController::class, 'downloadAttachment'])->name('invoices.attachment');
     Route::post('invoices/preview', [InvoiceController::class, 'previewInvoice'])->name('invoices.preview');
     Route::resource('invoices', InvoiceController::class)->except(['show']);
+    Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store'])->name('invoices.payments.store');
+    Route::delete('payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
+    Route::get('reconciliation', [ReconciliationController::class, 'index'])->name('reconciliation.index');
+    Route::post('reconciliation/{payment}/match', [ReconciliationController::class, 'match'])->name('reconciliation.match');
+    Route::delete('reconciliation/{payment}', [ReconciliationController::class, 'dismiss'])->name('reconciliation.dismiss');
     Route::patch('/clients/{client}', [ClientController::class, 'update'])->name('clients.update');
     Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
     Route::post('/payment-methods', [PaymentMethodController::class, 'store'])->name('payment-methods.store');
@@ -50,6 +58,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/api-tokens', [ApiTokenController::class, 'index'])->name('settings.api-tokens.index');
     Route::post('/settings/api-tokens', [ApiTokenController::class, 'store'])->name('settings.api-tokens.store');
     Route::delete('/settings/api-tokens/{tokenId}', [ApiTokenController::class, 'destroy'])->name('settings.api-tokens.destroy');
+
+    Route::get('/settings/webhooks', [WebhookSettingsController::class, 'index'])->name('settings.webhooks.index');
+    Route::post('/settings/webhooks/integrations', [WebhookSettingsController::class, 'storeIntegration'])->name('settings.integrations.store');
+    Route::delete('/settings/webhooks/integrations/{integration}', [WebhookSettingsController::class, 'destroyIntegration'])->name('settings.integrations.destroy');
+    Route::post('/settings/webhooks/subscriptions', [WebhookSettingsController::class, 'storeSubscription'])->name('settings.webhook-subscriptions.store');
+    Route::delete('/settings/webhooks/subscriptions/{subscription}', [WebhookSettingsController::class, 'destroySubscription'])->name('settings.webhook-subscriptions.destroy');
 
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::get('/settings/personal/edit', [SettingsController::class, 'editPersonal'])->name('settings.personal.edit');

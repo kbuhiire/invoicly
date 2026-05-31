@@ -1252,6 +1252,470 @@ client = JSON.parse(res.body)['data']
 puts client`,
         },
     },
+
+    // ── Webhooks ────────────────────────────────────────────────────────────────
+    {
+        id: 'webhooks-overview',
+        group: 'webhooks',
+        groupLabel: 'Webhooks',
+        title: 'Overview & Signatures',
+        method: null,
+        path: null,
+        description: 'Webhooks let Invoicly push events to your systems in real time, and let your systems push payment events back into Invoicly for auto-reconciliation. Every payload — inbound or outbound — is authenticated with an HMAC-SHA256 signature over the raw request body, sent in the X-Invoicly-Signature header. Always verify it before trusting a request.',
+        features: [
+            'Outbound: payment.received and invoice.reconciled events',
+            'Inbound: push gateway payments straight into reconciliation',
+            'HMAC-SHA256 signatures on every request (X-Invoicly-Signature)',
+            'Automatic retries with backoff on non-2xx (5 attempts)',
+            'Manage subscriptions from Settings → Webhooks or the API',
+        ],
+        note: 'Outbound deliveries carry X-Invoicly-Event (the event name) and X-Invoicly-Delivery (a unique id for idempotency). Respond with any 2xx to acknowledge; a non-2xx or timeout is retried after 10s, 60s, 300s, then 900s.',
+        ability: null,
+        params: [],
+        response: null,
+        code: {
+            curl: `# Invoicly signs every delivery. Verify it like this in your shell:
+#   expected = HMAC_SHA256(raw_request_body, your_subscription_secret)
+# then constant-time compare against the X-Invoicly-Signature header.
+
+BODY="$(cat -)"   # the exact raw bytes you received
+SECRET='whsec_your_subscription_secret'
+EXPECTED=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.* //')
+echo "expected: $EXPECTED"`,
+            php: `<?php
+
+// Verify an inbound Invoicly webhook (framework-agnostic).
+function invoicly_verify(string $rawBody, string $signature, string $secret): bool
+{
+    $expected = hash_hmac('sha256', $rawBody, $secret);
+
+    return hash_equals($expected, $signature);
+}
+
+$raw = file_get_contents('php://input');
+$sig = $_SERVER['HTTP_X_INVOICLY_SIGNATURE'] ?? '';
+
+if (! invoicly_verify($raw, $sig, getenv('INVOICLY_SECRET'))) {
+    http_response_code(401);
+    exit;
+}
+
+$event = json_decode($raw, true); // ['event' => ..., 'data' => [...]]`,
+            node: `const crypto = require('crypto');
+
+function verify(rawBody, signature, secret) {
+  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  return signature.length === expected.length
+    && crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+
+// Express — note express.raw so you get the exact bytes that were signed.
+app.post('/webhooks/invoicly', express.raw({ type: 'application/json' }), (req, res) => {
+  const ok = verify(req.body, req.header('X-Invoicly-Signature'), process.env.INVOICLY_SECRET);
+  if (!ok) return res.sendStatus(401);
+
+  const event = JSON.parse(req.body.toString());
+  // handle event.event / event.data ...
+  res.sendStatus(200);
+});`,
+            python: `import hmac, hashlib
+
+def verify(raw_body: bytes, signature: str, secret: str) -> bool:
+    expected = hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+
+# Flask
+@app.post('/webhooks/invoicly')
+def invoicly_webhook():
+    raw = request.get_data()  # exact bytes
+    sig = request.headers.get('X-Invoicly-Signature', '')
+    if not verify(raw, sig, os.environ['INVOICLY_SECRET']):
+        abort(401)
+    event = request.get_json()
+    return '', 200`,
+            ruby: `require 'openssl'
+
+def invoicly_verify(raw_body, signature, secret)
+  expected = OpenSSL::HMAC.hexdigest('SHA256', secret, raw_body)
+  Rack::Utils.secure_compare(expected, signature)
+end
+
+# Rails controller
+def invoicly_webhook
+  raw = request.raw_post
+  sig = request.headers['X-Invoicly-Signature'].to_s
+  head(:unauthorized) and return unless invoicly_verify(raw, sig, ENV['INVOICLY_SECRET'])
+  # handle params[:event] / params[:data]
+  head :ok
+end`,
+        },
+    },
+    {
+        id: 'webhooks-events',
+        group: 'webhooks',
+        groupLabel: 'Webhooks',
+        title: 'Event Payloads',
+        method: null,
+        path: null,
+        description: 'Every outbound delivery has the same envelope: an event name, a created_at timestamp, and a data object. Invoicly currently emits two events. payment.received fires whenever a payment lands (matched, under review, or unmatched). invoice.reconciled fires when a payment is confidently linked to an invoice — its data wraps both the payment and the invoice.',
+        features: null,
+        note: 'invoice.reconciled uses the same envelope, but data is { "payment": { … }, "invoice": { … } }. All ids are public uuids that match the REST API surface — never internal numeric ids.',
+        ability: null,
+        params: [],
+        response: `{
+  "event": "payment.received",
+  "created_at": "2026-05-31T09:00:00+00:00",
+  "data": {
+    "id": "9d2c4f1a-7b3e-4c2a-9f10-2b8e0d6a1c33",
+    "amount": 250.00,
+    "currency": "UGX",
+    "paid_at": "2026-05-31T08:59:00+00:00",
+    "reference": "Payment for EINV-2026-7",
+    "source": "webhook",
+    "match_status": "matched",
+    "invoice": {
+      "id": "1f0a9e22-44d1-4f8b-8c7a-0c5b3d9e7a01",
+      "number": "EINV-2026-7",
+      "status": "paid",
+      "currency": "UGX",
+      "amount": 250.00,
+      "amount_paid": 250.00,
+      "outstanding": 0.00
+    }
+  }
+}`,
+        code: { curl: null, php: null, node: null, python: null, ruby: null },
+    },
+    {
+        id: 'webhooks-incoming',
+        group: 'webhooks',
+        groupLabel: 'Webhooks',
+        title: 'Push a Payment (Inbound)',
+        method: 'POST',
+        path: '/webhooks/incoming/{integration}/payments',
+        description: 'Send a payment event from a gateway, bank, or PSP straight into Invoicly auto-reconciliation. This endpoint is authenticated by an HMAC signature (not a Bearer token): create an Integration in Settings → Webhooks to obtain the endpoint uuid and signing secret, then sign the raw body. Idempotent on external_id — retrying the same external_id returns the original payment, so it is safe to retry.',
+        features: null,
+        note: 'Returns 202 Accepted. match_status is one of matched (auto-linked), review (needs a human), or unmatched. Send X-Invoicly-Signature = HMAC-SHA256(rawBody, signing_secret).',
+        ability: null,
+        params: [
+            { name: 'integration',  in: 'path',   type: 'string',  required: true,  description: 'The uuid of your inbound integration (from Settings → Webhooks)' },
+            { name: 'X-Invoicly-Signature', in: 'header', type: 'string', required: true, description: 'Hex HMAC-SHA256 of the raw request body, keyed by the signing secret' },
+            { name: 'amount',       in: 'body',   type: 'number',  required: true,  description: 'Amount received (e.g. 250.00)' },
+            { name: 'currency',     in: 'body',   type: 'string',  required: true,  description: 'ISO 4217 currency code (e.g. UGX, USD)' },
+            { name: 'reference',    in: 'body',   type: 'string',  required: false, description: 'Payment reference / memo — an invoice number here drives Tier-1 matching' },
+            { name: 'external_id',  in: 'body',   type: 'string',  required: false, description: 'Your unique transaction id — used for idempotency' },
+            { name: 'paid_at',      in: 'body',   type: 'date',    required: false, description: 'When the payment was made (ISO 8601). Defaults to now' },
+            { name: 'gateway',      in: 'body',   type: 'string',  required: false, description: 'Originating gateway label. Defaults to the integration provider' },
+            { name: 'payer_name',  in: 'body',   type: 'string',  required: false, description: 'Payer name — a soft signal for the review queue' },
+            { name: 'payer_email', in: 'body',   type: 'string',  required: false, description: 'Payer email — a soft signal for the review queue' },
+            { name: 'metadata',     in: 'body',   type: 'object',  required: false, description: 'Arbitrary key/value pairs preserved alongside the payment' },
+        ],
+        response: `{
+  "payment_id": "9d2c4f1a-7b3e-4c2a-9f10-2b8e0d6a1c33",
+  "match_status": "matched",
+  "invoice_id": "1f0a9e22-44d1-4f8b-8c7a-0c5b3d9e7a01"
+}`,
+        code: {
+            curl: `SECRET='whsec_your_integration_secret'
+BODY='{"amount":250.00,"currency":"UGX","reference":"EINV-2026-7","external_id":"txn_001"}'
+SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.* //')
+
+curl --request POST \\
+  --url https://app.invoicly.io/webhooks/incoming/INTEGRATION_UUID/payments \\
+  --header "X-Invoicly-Signature: $SIG" \\
+  --header 'Content-Type: application/json' \\
+  --data "$BODY"`,
+            php: `<?php
+
+use GuzzleHttp\\Client;
+
+$secret = 'whsec_your_integration_secret';
+$body   = json_encode([
+    'amount'      => 250.00,
+    'currency'    => 'UGX',
+    'reference'   => 'EINV-2026-7',
+    'external_id' => 'txn_001',
+]);
+
+$signature = hash_hmac('sha256', $body, $secret);
+
+(new Client())->post(
+    'https://app.invoicly.io/webhooks/incoming/INTEGRATION_UUID/payments',
+    [
+        'headers' => [
+            'Content-Type'         => 'application/json',
+            'X-Invoicly-Signature' => $signature,
+        ],
+        'body' => $body,
+    ]
+);`,
+            node: `const crypto = require('crypto');
+const axios = require('axios');
+
+const secret = process.env.INVOICLY_SIGNING_SECRET;
+const body = JSON.stringify({
+  amount: 250.0,
+  currency: 'UGX',
+  reference: 'EINV-2026-7',
+  external_id: 'txn_001',
+});
+
+const signature = crypto.createHmac('sha256', secret).update(body).digest('hex');
+
+await axios.post(
+  'https://app.invoicly.io/webhooks/incoming/INTEGRATION_UUID/payments',
+  body,
+  { headers: { 'Content-Type': 'application/json', 'X-Invoicly-Signature': signature } }
+);`,
+            python: `import hmac, hashlib, json, requests
+
+secret = 'whsec_your_integration_secret'
+body = json.dumps({
+    'amount': 250.0,
+    'currency': 'UGX',
+    'reference': 'EINV-2026-7',
+    'external_id': 'txn_001',
+}, separators=(',', ':'))
+
+signature = hmac.new(secret.encode(), body.encode(), hashlib.sha256).hexdigest()
+
+requests.post(
+    'https://app.invoicly.io/webhooks/incoming/INTEGRATION_UUID/payments',
+    data=body,
+    headers={'Content-Type': 'application/json', 'X-Invoicly-Signature': signature},
+)`,
+            ruby: `require 'openssl'
+require 'json'
+require 'net/http'
+
+secret = 'whsec_your_integration_secret'
+body   = JSON.generate(amount: 250.0, currency: 'UGX', reference: 'EINV-2026-7', external_id: 'txn_001')
+
+signature = OpenSSL::HMAC.hexdigest('SHA256', secret, body)
+
+uri = URI('https://app.invoicly.io/webhooks/incoming/INTEGRATION_UUID/payments')
+req = Net::HTTP::Post.new(uri)
+req['Content-Type']         = 'application/json'
+req['X-Invoicly-Signature'] = signature
+req.body = body
+
+Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }`,
+        },
+    },
+    {
+        id: 'webhooks-subscriptions-list',
+        group: 'webhooks',
+        groupLabel: 'Webhooks',
+        title: 'List Subscriptions',
+        method: 'GET',
+        path: '/api/v1/webhooks/subscriptions',
+        description: 'Returns the authenticated user’s outbound webhook subscriptions. The signing secret is never returned here — it is shown only once, at creation.',
+        features: null,
+        note: null,
+        ability: 'webhooks:read',
+        params: [],
+        response: `{
+  "data": [
+    {
+      "id": "7c1e0b9a-2f44-4d31-9a76-5c0e2b1d8e90",
+      "url": "https://example.com/webhooks/invoicly",
+      "events": ["payment.received", "invoice.reconciled"],
+      "active": true,
+      "failure_count": 0,
+      "last_status": 200,
+      "last_dispatched_at": "2026-05-31T09:00:01+00:00",
+      "created_at": "2026-05-29T10:00:00+00:00"
+    }
+  ]
+}`,
+        code: {
+            curl: `curl --request GET \\
+  --url https://app.invoicly.io/api/v1/webhooks/subscriptions \\
+  --header 'Authorization: Bearer YOUR_API_TOKEN' \\
+  --header 'Accept: application/json'`,
+            php: `<?php
+
+use GuzzleHttp\\Client;
+
+$response = (new Client())->get(
+    'https://app.invoicly.io/api/v1/webhooks/subscriptions',
+    ['headers' => ['Authorization' => 'Bearer YOUR_API_TOKEN', 'Accept' => 'application/json']]
+);
+
+$subscriptions = json_decode($response->getBody()->getContents(), true)['data'];`,
+            node: `const axios = require('axios');
+
+const { data } = await axios.get(
+  'https://app.invoicly.io/api/v1/webhooks/subscriptions',
+  { headers: { Authorization: 'Bearer YOUR_API_TOKEN' } }
+);
+
+console.log(data.data);`,
+            python: `import requests
+
+response = requests.get(
+    'https://app.invoicly.io/api/v1/webhooks/subscriptions',
+    headers={'Authorization': 'Bearer YOUR_API_TOKEN'},
+)
+
+print(response.json()['data'])`,
+            ruby: `require 'net/http'
+require 'json'
+
+uri = URI('https://app.invoicly.io/api/v1/webhooks/subscriptions')
+req = Net::HTTP::Get.new(uri)
+req['Authorization'] = 'Bearer YOUR_API_TOKEN'
+req['Accept']        = 'application/json'
+
+res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+puts JSON.parse(res.body)['data']`,
+        },
+    },
+    {
+        id: 'webhooks-subscriptions-create',
+        group: 'webhooks',
+        groupLabel: 'Webhooks',
+        title: 'Create Subscription',
+        method: 'POST',
+        path: '/api/v1/webhooks/subscriptions',
+        description: 'Registers an outbound webhook destination. Invoicly will POST a signed payload to your url whenever one of the subscribed events fires. The response includes the signing secret exactly once — store it securely; it cannot be retrieved later.',
+        features: null,
+        note: 'Valid events: payment.received, invoice.reconciled. The returned secret keys the X-Invoicly-Signature HMAC on every delivery.',
+        ability: 'webhooks:manage',
+        params: [
+            { name: 'url',      in: 'body', type: 'string', required: true, description: 'HTTPS endpoint that will receive the signed payloads' },
+            { name: 'events',   in: 'body', type: 'array',  required: true, description: 'Event names to subscribe to (payment.received, invoice.reconciled)' },
+        ],
+        response: `{
+  "data": {
+    "id": "7c1e0b9a-2f44-4d31-9a76-5c0e2b1d8e90",
+    "url": "https://example.com/webhooks/invoicly",
+    "events": ["payment.received", "invoice.reconciled"],
+    "active": true,
+    "failure_count": 0,
+    "last_status": null,
+    "last_dispatched_at": null,
+    "created_at": "2026-05-31T09:00:00+00:00",
+    "secret": "whsec_shown_once_store_it_now"
+  }
+}`,
+        code: {
+            curl: `curl --request POST \\
+  --url https://app.invoicly.io/api/v1/webhooks/subscriptions \\
+  --header 'Authorization: Bearer YOUR_API_TOKEN' \\
+  --header 'Content-Type: application/json' \\
+  --data '{
+    "url": "https://example.com/webhooks/invoicly",
+    "events": ["payment.received", "invoice.reconciled"]
+  }'`,
+            php: `<?php
+
+use GuzzleHttp\\Client;
+
+$response = (new Client())->post(
+    'https://app.invoicly.io/api/v1/webhooks/subscriptions',
+    [
+        'headers' => ['Authorization' => 'Bearer YOUR_API_TOKEN'],
+        'json' => [
+            'url'    => 'https://example.com/webhooks/invoicly',
+            'events' => ['payment.received', 'invoice.reconciled'],
+        ],
+    ]
+);
+
+$subscription = json_decode($response->getBody()->getContents(), true)['data'];
+// Store $subscription['secret'] now — it is never shown again.`,
+            node: `const axios = require('axios');
+
+const { data } = await axios.post(
+  'https://app.invoicly.io/api/v1/webhooks/subscriptions',
+  {
+    url: 'https://example.com/webhooks/invoicly',
+    events: ['payment.received', 'invoice.reconciled'],
+  },
+  { headers: { Authorization: 'Bearer YOUR_API_TOKEN' } }
+);
+
+// Store data.data.secret now — it is never shown again.
+console.log(data.data);`,
+            python: `import requests
+
+response = requests.post(
+    'https://app.invoicly.io/api/v1/webhooks/subscriptions',
+    headers={'Authorization': 'Bearer YOUR_API_TOKEN'},
+    json={
+        'url': 'https://example.com/webhooks/invoicly',
+        'events': ['payment.received', 'invoice.reconciled'],
+    },
+)
+
+subscription = response.json()['data']
+# Store subscription['secret'] now — it is never shown again.`,
+            ruby: `require 'net/http'
+require 'json'
+
+uri = URI('https://app.invoicly.io/api/v1/webhooks/subscriptions')
+req = Net::HTTP::Post.new(uri)
+req['Authorization'] = 'Bearer YOUR_API_TOKEN'
+req['Content-Type']  = 'application/json'
+req.body = JSON.generate(
+  url: 'https://example.com/webhooks/invoicly',
+  events: ['payment.received', 'invoice.reconciled']
+)
+
+res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+subscription = JSON.parse(res.body)['data']
+# Store subscription['secret'] now — it is never shown again.`,
+        },
+    },
+    {
+        id: 'webhooks-subscriptions-delete',
+        group: 'webhooks',
+        groupLabel: 'Webhooks',
+        title: 'Delete Subscription',
+        method: 'DELETE',
+        path: '/api/v1/webhooks/subscriptions/{id}',
+        description: 'Removes a webhook subscription. Invoicly stops delivering events to its url immediately. Returns 204 No Content on success.',
+        features: null,
+        note: null,
+        ability: 'webhooks:manage',
+        params: [
+            { name: 'id', in: 'path', type: 'string', required: true, description: 'The uuid of the subscription to delete' },
+        ],
+        response: null,
+        code: {
+            curl: `curl --request DELETE \\
+  --url https://app.invoicly.io/api/v1/webhooks/subscriptions/SUBSCRIPTION_UUID \\
+  --header 'Authorization: Bearer YOUR_API_TOKEN'`,
+            php: `<?php
+
+use GuzzleHttp\\Client;
+
+(new Client())->delete(
+    'https://app.invoicly.io/api/v1/webhooks/subscriptions/SUBSCRIPTION_UUID',
+    ['headers' => ['Authorization' => 'Bearer YOUR_API_TOKEN']]
+);`,
+            node: `const axios = require('axios');
+
+await axios.delete(
+  'https://app.invoicly.io/api/v1/webhooks/subscriptions/SUBSCRIPTION_UUID',
+  { headers: { Authorization: 'Bearer YOUR_API_TOKEN' } }
+);`,
+            python: `import requests
+
+requests.delete(
+    'https://app.invoicly.io/api/v1/webhooks/subscriptions/SUBSCRIPTION_UUID',
+    headers={'Authorization': 'Bearer YOUR_API_TOKEN'},
+)`,
+            ruby: `require 'net/http'
+
+uri = URI('https://app.invoicly.io/api/v1/webhooks/subscriptions/SUBSCRIPTION_UUID')
+req = Net::HTTP::Delete.new(uri)
+req['Authorization'] = 'Bearer YOUR_API_TOKEN'
+
+Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }`,
+        },
+    },
 ];
 
 // ── Computed helpers ─────────────────────────────────────────────────────────

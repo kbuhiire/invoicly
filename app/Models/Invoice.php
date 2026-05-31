@@ -5,12 +5,13 @@ namespace App\Models;
 use App\Enums\ClientType;
 use App\Enums\InvoiceStatus;
 use Database\Factories\InvoiceFactory;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+
 #[Fillable([
     'user_id',
     'client_id',
@@ -22,6 +23,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'status',
     'currency',
     'amount',
+    'amount_paid',
+    'paid_at',
+    'last_reminder_sent_at',
     'vat_amount',
     'amount_secondary',
     'currency_secondary',
@@ -55,8 +59,11 @@ class Invoice extends Model
             'due_date' => 'date',
             'period_from' => 'date',
             'period_to' => 'date',
+            'paid_at' => 'datetime',
+            'last_reminder_sent_at' => 'datetime',
             'status' => InvoiceStatus::class,
             'amount' => 'decimal:2',
+            'amount_paid' => 'decimal:2',
             'vat_amount' => 'decimal:2',
             'amount_secondary' => 'decimal:2',
             'is_template' => 'boolean',
@@ -76,6 +83,26 @@ class Invoice extends Model
     public function lineItems(): HasMany
     {
         return $this->hasMany(InvoiceLineItem::class)->orderBy('sort_order');
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class)->orderByDesc('paid_at');
+    }
+
+    /**
+     * Outstanding balance = invoice total minus what has been paid.
+     */
+    public function outstandingAmount(): string
+    {
+        $outstanding = bcsub((string) $this->amount, (string) ($this->amount_paid ?? '0'), 2);
+
+        return bccomp($outstanding, '0', 2) === 1 ? $outstanding : '0.00';
+    }
+
+    public function isFullyPaid(): bool
+    {
+        return bccomp((string) ($this->amount_paid ?? '0'), (string) $this->amount, 2) >= 0;
     }
 
     public function recurringSchedules(): HasMany

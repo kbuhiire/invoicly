@@ -6,6 +6,7 @@ use App\Enums\ClientType;
 use App\Enums\InvoiceStatus;
 use App\Models\Client;
 use App\Models\Invoice;
+use App\Services\ForecastService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,8 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    public function __construct(private readonly ForecastService $forecast) {}
+
     public function index(Request $request): Response
     {
         $user = $request->user();
@@ -126,6 +129,28 @@ class DashboardController extends Controller
                 'total' => (float) $row->total,
             ]);
 
+        // Credit insights: riskiest scored clients first (lowest score), so the
+        // ones to watch before sending new invoices surface at the top.
+        $riskyClients = Client::query()
+            ->where('user_id', $user->id)
+            ->where('type', $segmentType->value)
+            ->whereNotNull('credit_score')
+            ->orderBy('credit_score')
+            ->orderByDesc('late_count')
+            ->limit(5)
+            ->get(['name', 'credit_score', 'credit_risk_level', 'on_time_rate', 'avg_days_to_pay', 'late_count'])
+            ->map(fn (Client $c) => [
+                'client_name' => $c->name,
+                'credit_score' => $c->credit_score,
+                'risk_level' => $c->credit_risk_level,
+                'on_time_rate' => $c->on_time_rate,
+                'avg_days_to_pay' => $c->avg_days_to_pay,
+                'late_count' => $c->late_count,
+            ]);
+
+        // Cash-flow forecast (predicted weekly inflows) for this segment.
+        $cashFlowForecast = $this->forecast->forUser($user, $segmentType);
+
         return Inertia::render('Dashboard', [
             'segment' => $segment,
             'preferred_currency' => $user->preferred_currency ?? 'USD',
@@ -143,6 +168,8 @@ class DashboardController extends Controller
             ],
             'recent_invoices' => $recentInvoices,
             'top_clients' => $topClients,
+            'risky_clients' => $riskyClients,
+            'cash_flow_forecast' => $cashFlowForecast,
         ]);
     }
 }

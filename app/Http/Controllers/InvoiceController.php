@@ -10,6 +10,7 @@ use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\InvoiceLineItem;
 use App\Models\PaymentMethod;
+use App\Services\PaymentService;
 use App\Support\PdfAsset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,14 +38,19 @@ class InvoiceController extends Controller
         $dateFrom = $request->date('date_from');
         $dateTo = $request->date('date_to');
 
+        $perPage = $request->integer('per_page', 10);
+        if (! in_array($perPage, [10, 25, 50], true)) {
+            $perPage = 10;
+        }
+
         $scoped = Invoice::query()
             ->where('user_id', $request->user()->id)
-            ->whereHas('client', fn($q) => $q->where('type', $segmentType->value));
+            ->whereHas('client', fn ($q) => $q->where('type', $segmentType->value));
 
         if ($search !== '') {
             $scoped->where(function ($q) use ($search) {
-                $q->where('number', 'like', '%' . $search . '%')
-                    ->orWhereHas('client', fn($c) => $c->where('name', 'like', '%' . $search . '%'));
+                $q->where('number', 'like', '%'.$search.'%')
+                    ->orWhereHas('client', fn ($c) => $c->where('name', 'like', '%'.$search.'%'));
             });
         }
 
@@ -58,15 +64,16 @@ class InvoiceController extends Controller
 
         $balanceBase = clone $scoped;
 
-        $paidTotal = (string) (clone $balanceBase)
-            ->where('status', InvoiceStatus::Paid)
-            ->sum('amount');
+        // Money actually received vs. still outstanding — partial-payment aware.
+        $paidTotal = bcadd((string) (clone $balanceBase)->sum('amount_paid'), '0', 2);
+        $totalBilled = bcadd((string) (clone $balanceBase)->sum('amount'), '0', 2);
+        $awaitingTotal = bcsub($totalBilled, $paidTotal, 2);
+        if (bccomp($awaitingTotal, '0', 2) < 0) {
+            $awaitingTotal = '0.00';
+        }
 
-        $awaitingTotal = (string) (clone $balanceBase)
-            ->where('status', InvoiceStatus::AwaitingPayment)
-            ->sum('amount');
-
-        if ($statusFilter !== '' && in_array($statusFilter, [InvoiceStatus::Paid->value, InvoiceStatus::AwaitingPayment->value], true)) {
+        $statusValues = array_map(fn (InvoiceStatus $c) => $c->value, InvoiceStatus::cases());
+        if ($statusFilter !== '' && in_array($statusFilter, $statusValues, true)) {
             $scoped->where('status', $statusFilter);
         }
 
@@ -74,9 +81,9 @@ class InvoiceController extends Controller
             ->with('client')
             ->orderByDesc('issue_date')
             ->orderByDesc('id')
-            ->paginate(15)
+            ->paginate($perPage)
             ->withQueryString()
-            ->through(fn(Invoice $invoice) => [
+            ->through(fn (Invoice $invoice) => [
                 'id' => $invoice->id,
                 'uuid' => $invoice->uuid,
                 'number' => $invoice->number,
@@ -88,6 +95,8 @@ class InvoiceController extends Controller
                 'status' => $invoice->status->value,
                 'currency' => $invoice->currency,
                 'amount' => $invoice->amount,
+                'amount_paid' => $invoice->amount_paid,
+                'outstanding' => $invoice->outstandingAmount(),
                 'amount_secondary' => $invoice->amount_secondary,
                 'currency_secondary' => $invoice->currency_secondary,
                 'has_attachment' => (bool) $invoice->attachment_path,
@@ -102,6 +111,7 @@ class InvoiceController extends Controller
                 'status' => $statusFilter,
                 'date_from' => $dateFrom?->format('Y-m-d'),
                 'date_to' => $dateTo?->format('Y-m-d'),
+                'per_page' => $perPage,
             ],
             'balance' => [
                 'paid_total' => $paidTotal,
@@ -139,17 +149,21 @@ class InvoiceController extends Controller
                 'city',
                 'postal_code',
                 'email',
-                'vat_number'
+                'vat_number',
+                'credit_score',
+                'credit_risk_level',
+                'avg_days_to_pay',
+                'on_time_rate',
             ]);
 
         $countries = collect(config('countries'))
-            ->map(fn(string $name, string $code) => ['code' => $code, 'name' => $name])
+            ->map(fn (string $name, string $code) => ['code' => $code, 'name' => $name])
             ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
             ->all();
 
         $currencies = collect(config('currencies'))
-            ->map(fn(array $data, string $code) => ['code' => $code, 'name' => $data['name'], 'symbol' => $data['symbol']])
+            ->map(fn (array $data, string $code) => ['code' => $code, 'name' => $data['name'], 'symbol' => $data['symbol']])
             ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
             ->all();
@@ -183,7 +197,7 @@ class InvoiceController extends Controller
             $isBusiness = (bool) $data['new_client_is_business'];
             $name = $isBusiness
                 ? (string) $data['new_client_business_name']
-                : trim((string) $data['new_client_first_name'] . ' ' . (string) $data['new_client_last_name']);
+                : trim((string) $data['new_client_first_name'].' '.(string) $data['new_client_last_name']);
 
             $client = Client::query()->create([
                 'user_id' => $user->id,
@@ -296,7 +310,7 @@ class InvoiceController extends Controller
                 'payment_details' => $invoice->payment_details,
                 'has_attachment' => (bool) $invoice->attachment_path,
                 'is_template' => (bool) $invoice->is_template,
-                'line_items' => $invoice->lineItems->map(fn(InvoiceLineItem $li) => [
+                'line_items' => $invoice->lineItems->map(fn (InvoiceLineItem $li) => [
                     'description' => $li->description,
                     'quantity' => (string) $li->quantity,
                     'unit_price' => (string) $li->unit_price,
@@ -361,6 +375,12 @@ class InvoiceController extends Controller
             }
         });
 
+        // Once real payments are tracked they — not the form's status field —
+        // drive the invoice's payment state, so recompute over any manual edit.
+        if ($invoice->payments()->exists()) {
+            app(PaymentService::class)->recompute($invoice);
+        }
+
         $invoice->refresh();
         $invoice->load('client');
 
@@ -394,7 +414,7 @@ class InvoiceController extends Controller
 
         $lineItemsData = $request->input('line_items', []);
         $amount = $this->lineItemsTotal(
-            array_filter((array) $lineItemsData, fn($r) => isset($r['quantity'], $r['unit_price']))
+            array_filter((array) $lineItemsData, fn ($r) => isset($r['quantity'], $r['unit_price']))
         );
 
         $clientId = $request->input('client_id');
@@ -411,7 +431,7 @@ class InvoiceController extends Controller
                 ? (string) $request->input('new_client_business_name', 'Client')
                 : trim(
                     (string) $request->input('new_client_first_name', '')
-                        . ' ' .
+                        .' '.
                         (string) $request->input('new_client_last_name', '')
                 );
             $client = new Client([
@@ -427,7 +447,7 @@ class InvoiceController extends Controller
         $currency = strtoupper((string) $request->input('currency', $user->preferred_currency ?: 'USD'));
 
         $invoice = new Invoice([
-            'number' => $request->input('invoice_number', Invoice::nextNumberForUser($user, \App\Enums\ClientType::External, null)),
+            'number' => $request->input('invoice_number', Invoice::nextNumberForUser($user, ClientType::External, null)),
             'issue_date' => $request->input('issue_date', now()->toDateString()),
             'due_date' => $request->input('due_date'),
             'period_from' => $request->input('period_from'),
@@ -444,9 +464,9 @@ class InvoiceController extends Controller
         ]);
 
         $lineItems = collect($lineItemsData)
-            ->filter(fn($r) => isset($r['description'], $r['quantity'], $r['unit_price']))
+            ->filter(fn ($r) => isset($r['description'], $r['quantity'], $r['unit_price']))
             ->values()
-            ->map(fn($r, $i) => new InvoiceLineItem([
+            ->map(fn ($r, $i) => new InvoiceLineItem([
                 'description' => $r['description'],
                 'quantity' => $r['quantity'],
                 'unit_price' => $r['unit_price'],
@@ -483,7 +503,7 @@ class InvoiceController extends Controller
             'isPreview' => false,
         ])
             ->format('a4')
-            ->name($invoice->number . '.pdf');
+            ->name($invoice->number.'.pdf');
     }
 
     public function downloadAttachment(Request $request, Invoice $invoice)

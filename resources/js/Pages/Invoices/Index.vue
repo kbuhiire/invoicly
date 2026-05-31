@@ -20,6 +20,7 @@ const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? '');
 const dateFrom = ref(props.filters.date_from ?? '');
 const dateTo = ref(props.filters.date_to ?? '');
+const perPage = ref(props.filters.per_page ?? 10);
 const balanceOpen = ref(true);
 const currencyOpen = ref(false);
 const addInvoiceModalOpen = ref(false);
@@ -75,6 +76,7 @@ function visitIndex(extra = {}) {
             status: status.value || undefined,
             date_from: dateFrom.value || undefined,
             date_to: dateTo.value || undefined,
+            per_page: perPage.value || undefined,
             ...extra,
         },
         { preserveState: true, replace: true },
@@ -87,7 +89,7 @@ watch(search, () => {
     searchTimer = setTimeout(() => visitIndex(), 350);
 });
 
-watch([status, dateFrom, dateTo], () => visitIndex());
+watch([status, dateFrom, dateTo, perPage], () => visitIndex());
 
 watch(currencyOpen, (open) => {
     if (open) {
@@ -96,6 +98,43 @@ watch(currencyOpen, (open) => {
         currencyForm.clearErrors();
     }
 });
+
+const paymentModalOpen = ref(false);
+const paymentTarget = ref(null);
+const paymentForm = useForm({
+    amount: '',
+    paid_at: '',
+    reference: '',
+});
+
+function todayIso() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function openPaymentModal(inv) {
+    rowMenuOpen.value = null;
+    paymentTarget.value = inv;
+    paymentForm.clearErrors();
+    paymentForm.amount = inv.outstanding ?? '';
+    paymentForm.paid_at = todayIso();
+    paymentForm.reference = '';
+    paymentModalOpen.value = true;
+}
+
+function closePaymentModal() {
+    paymentModalOpen.value = false;
+    paymentTarget.value = null;
+}
+
+function submitPayment() {
+    if (!paymentTarget.value) {
+        return;
+    }
+    paymentForm.post(route('invoices.payments.store', paymentTarget.value.uuid), {
+        preserveScroll: true,
+        onSuccess: () => closePaymentModal(),
+    });
+}
 
 function initials(name) {
     return name
@@ -273,6 +312,7 @@ function toggleRowMenu(id) {
                         >
                             <option value="">Status</option>
                             <option value="paid">Paid</option>
+                            <option value="partially_paid">Partially paid</option>
                             <option value="awaiting_payment">Awaiting payment</option>
                         </select>
                         <PrimaryButton
@@ -426,12 +466,25 @@ function toggleRowMenu(id) {
                                                 Paid
                                             </span>
                                             <span
+                                                v-else-if="inv.status === 'partially_paid'"
+                                                class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                                                style="background: #e0e7ff; color: #3730a3"
+                                            >
+                                                Partially paid
+                                            </span>
+                                            <span
                                                 v-else
                                                 class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
                                                 style="background: #fef7e0; color: #b05a00"
                                             >
                                                 Awaiting payment
                                             </span>
+                                        </div>
+                                        <div
+                                            v-if="inv.status === 'partially_paid'"
+                                            class="mt-1 text-xs text-gray-500"
+                                        >
+                                            {{ formatMoney(inv.outstanding, inv.currency) }} outstanding
                                         </div>
                                     </td>
                                     <td class="relative px-5 py-4 text-right">
@@ -456,6 +509,14 @@ function toggleRowMenu(id) {
                                             >
                                                 Edit
                                             </Link>
+                                            <button
+                                                v-if="inv.status !== 'paid' && !inv.is_template"
+                                                type="button"
+                                                class="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                                                @click="openPaymentModal(inv)"
+                                            >
+                                                Record payment
+                                            </button>
                                             <a
                                                 :href="route('invoices.pdf', inv.uuid)"
                                                 class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -490,20 +551,36 @@ function toggleRowMenu(id) {
                         </table>
                     </div>
                     <div
-                        v-if="invoices.links?.length > 3"
-                        class="flex flex-wrap gap-2 border-t border-gray-100 px-5 py-4 text-sm"
+                        class="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm sm:flex-row sm:items-center sm:justify-between"
                     >
-                        <Link
-                            v-for="l in invoices.links"
-                            :key="l.label"
-                            :href="l.url || '#'"
-                            class="rounded px-3 py-1"
-                            :class="[
-                                l.active ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700',
-                                !l.url ? 'pointer-events-none opacity-40' : '',
-                            ]"
-                            v-html="l.label"
-                        />
+                        <div class="flex items-center gap-2 text-gray-500">
+                            <label for="per-page" class="text-xs font-medium">Rows per page</label>
+                            <select
+                                id="per-page"
+                                v-model.number="perPage"
+                                class="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm shadow-sm"
+                            >
+                                <option :value="10">10</option>
+                                <option :value="25">25</option>
+                                <option :value="50">50</option>
+                            </select>
+                        </div>
+                        <div
+                            v-if="invoices.links?.length > 3"
+                            class="flex flex-wrap gap-2"
+                        >
+                            <Link
+                                v-for="l in invoices.links"
+                                :key="l.label"
+                                :href="l.url || '#'"
+                                class="rounded px-3 py-1"
+                                :class="[
+                                    l.active ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700',
+                                    !l.url ? 'pointer-events-none opacity-40' : '',
+                                ]"
+                                v-html="l.label"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -640,6 +717,92 @@ function toggleRowMenu(id) {
                     <DangerButton type="button" @click="confirmDelete">
                         Delete
                     </DangerButton>
+                </div>
+            </div>
+        </Modal>
+
+        <Modal :show="paymentModalOpen" max-width="md" @close="closePaymentModal">
+            <div class="px-6 py-5">
+                <div class="relative flex items-start justify-center border-b border-gray-100 pb-4">
+                    <h2 class="text-center text-lg font-semibold text-gray-900">
+                        Record payment
+                    </h2>
+                    <button
+                        type="button"
+                        class="absolute end-0 top-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                        aria-label="Close"
+                        @click="closePaymentModal"
+                    >
+                        <span class="text-xl leading-none" aria-hidden="true">×</span>
+                    </button>
+                </div>
+
+                <div v-if="paymentTarget" class="mt-5">
+                    <div class="mb-4 rounded-xl border border-gray-200/60 bg-gray-50/70 p-4 text-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-500">{{ paymentTarget.number }}</span>
+                            <span class="font-medium text-gray-900">{{ paymentTarget.client.name }}</span>
+                        </div>
+                        <div class="mt-2 flex items-center justify-between">
+                            <span class="text-gray-500">Outstanding</span>
+                            <span class="font-mono font-semibold tabular-nums text-gray-900">
+                                {{ formatMoney(paymentTarget.outstanding, paymentTarget.currency) }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <form class="space-y-4" @submit.prevent="submitPayment">
+                        <div>
+                            <label class="text-xs font-medium text-gray-600">
+                                Amount received ({{ paymentTarget.currency }})
+                            </label>
+                            <TextInput
+                                v-model="paymentForm.amount"
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                class="mt-1 block w-full"
+                                required
+                            />
+                            <p v-if="paymentForm.errors.amount" class="mt-1 text-sm text-red-600">
+                                {{ paymentForm.errors.amount }}
+                            </p>
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-600">Date received</label>
+                            <TextInput
+                                v-model="paymentForm.paid_at"
+                                type="date"
+                                :max="todayIso()"
+                                class="mt-1 block w-full"
+                                required
+                            />
+                            <p v-if="paymentForm.errors.paid_at" class="mt-1 text-sm text-red-600">
+                                {{ paymentForm.errors.paid_at }}
+                            </p>
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-600">Reference (optional)</label>
+                            <TextInput
+                                v-model="paymentForm.reference"
+                                type="text"
+                                placeholder="Bank reference, transaction ID…"
+                                class="mt-1 block w-full"
+                                maxlength="255"
+                            />
+                            <p v-if="paymentForm.errors.reference" class="mt-1 text-sm text-red-600">
+                                {{ paymentForm.errors.reference }}
+                            </p>
+                        </div>
+                        <div class="flex justify-end gap-2 border-t border-gray-100 pt-4">
+                            <SecondaryButton type="button" @click="closePaymentModal">
+                                Cancel
+                            </SecondaryButton>
+                            <PrimaryButton type="submit" :disabled="paymentForm.processing">
+                                Record payment
+                            </PrimaryButton>
+                        </div>
+                    </form>
                 </div>
             </div>
         </Modal>

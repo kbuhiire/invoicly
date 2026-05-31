@@ -858,6 +858,23 @@ onUnmounted(() => {
                                     </div>
                                     <InputError class="mt-2" :message="form.errors.client_id" />
 
+                                    <!-- Credit-risk warning (non-blocking) -->
+                                    <div
+                                        v-if="selectedClient && selectedClient.credit_risk_level === 'high'"
+                                        class="mt-4 flex gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"
+                                    >
+                                        <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                                        </svg>
+                                        <p>
+                                            <span class="font-semibold">High payment-risk client.</span>
+                                            <template v-if="selectedClient.on_time_rate !== null && selectedClient.on_time_rate !== undefined">
+                                                Pays on time {{ selectedClient.on_time_rate }}% of the time<template v-if="selectedClient.avg_days_to_pay">, ~{{ selectedClient.avg_days_to_pay }} days on average</template>.
+                                            </template>
+                                            Consider requiring upfront payment or shorter terms.
+                                        </p>
+                                    </div>
+
                                     <!-- Selected client card -->
                                     <div v-if="selectedClient" class="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white">
                                         <div class="flex items-center gap-3 px-4 py-3">
