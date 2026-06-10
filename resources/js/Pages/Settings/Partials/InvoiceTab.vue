@@ -1,6 +1,7 @@
 <script setup>
 import InputError from '@/Components/InputError.vue';
 import Modal from '@/Components/Modal.vue';
+import NumberingSection from '@/Pages/Settings/Partials/NumberingSection.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
@@ -11,6 +12,7 @@ const props = defineProps({
     active: { type: Boolean, default: false },
     countries: { type: Array, required: true },
     phoneDialOptions: { type: Array, default: () => [] },
+    numbering: { type: Array, default: () => [] },
 });
 
 const page = usePage();
@@ -641,25 +643,7 @@ function saveInvoicePhone() {
                     </div>
                 </div>
 
-                <div class="rounded-3xl border border-gray-200/60 bg-white p-6 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.12)]">
-                    <div class="flex gap-2">
-                        <div
-                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700"
-                        >
-                            <span class="text-sm font-bold">i</span>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-semibold text-gray-900">Invoice numbering</h3>
-                            <p class="mt-2 text-sm text-gray-600">
-                                Numbers look like
-                                <strong>EINV-2026-1</strong>
-                                for external clients and
-                                <strong>DINV-2026-1</strong>
-                                for Invoicly clients: prefix, year, then a sequence that resets every year.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                <NumberingSection :sequences="numbering" />
             </div>
         </div>
     </div>

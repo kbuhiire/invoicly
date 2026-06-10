@@ -13,6 +13,9 @@ use App\Models\RecurringInvoice;
 use App\Models\User;
 use App\Http\Requests\UpdateInvoiceAddressRequest;
 use App\Http\Requests\UpdateInvoicePhoneRequest;
+use App\Http\Requests\UpdateNumberingRequest;
+use App\Models\DocumentSequence;
+use App\Services\DocumentNumberService;
 use App\Support\AddressNormalization;
 use App\Support\PdfAsset;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -73,6 +76,24 @@ class SettingsController extends Controller
                 'issue_date' => $inv->issue_date?->format('Y-m-d'),
             ]);
 
+        $numberService = app(DocumentNumberService::class);
+        $numbering = collect([
+            DocumentNumberService::TYPE_INVOICE_EXTERNAL => 'External invoices',
+            DocumentNumberService::TYPE_INVOICE_INVOICLY => 'Invoicly invoices',
+        ])->map(function (string $label, string $type) use ($numberService, $user) {
+            $sequence = $numberService->sequenceFor($user, $type);
+
+            return [
+                'document_type' => $type,
+                'label' => $label,
+                'prefix' => $sequence->prefix,
+                'next_number' => $sequence->next_number,
+                'padding' => $sequence->padding,
+                'include_year' => $sequence->include_year,
+                'preview' => $numberService->preview($user, $type),
+            ];
+        })->values();
+
         return Inertia::render('Settings/Index', [
             'activeTab' => $tab,
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
@@ -81,7 +102,28 @@ class SettingsController extends Controller
             'phoneDialOptions' => $this->phoneDialOptionsPayload(),
             'recurringInvoices' => $recurringInvoices,
             'templateInvoices' => $templateInvoices,
+            'numbering' => $numbering,
         ]);
+    }
+
+    public function updateNumbering(UpdateNumberingRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+
+        DocumentSequence::query()->updateOrCreate(
+            [
+                'user_id' => $request->user()->id,
+                'document_type' => $data['document_type'],
+            ],
+            [
+                'prefix' => $data['prefix'],
+                'next_number' => $data['next_number'],
+                'padding' => $data['padding'],
+                'include_year' => $data['include_year'],
+            ]
+        );
+
+        return back()->with('success', 'Numbering preferences saved.');
     }
 
     public function editPersonal(Request $request): Response

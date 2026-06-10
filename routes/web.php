@@ -76,6 +76,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/address/edit', [SettingsController::class, 'editAddress'])->name('settings.address.edit');
     Route::patch('/settings/address', [SettingsController::class, 'updateAddress'])->name('settings.address.update');
     Route::patch('/settings/invoice', [SettingsController::class, 'updateInvoice'])->name('settings.invoice.update');
+    Route::patch('/settings/numbering', [SettingsController::class, 'updateNumbering'])->name('settings.numbering.update');
     Route::patch('/settings/invoice/address', [SettingsController::class, 'updateInvoiceAddress'])->name('settings.invoice.address.update');
     Route::patch('/settings/invoice/phone', [SettingsController::class, 'updateInvoicePhone'])->name('settings.invoice.phone.update');
     Route::get('/settings/invoice/preview', [SettingsController::class, 'previewInvoicePdf'])->name('settings.invoice.preview');

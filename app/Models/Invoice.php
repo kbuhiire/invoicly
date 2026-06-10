@@ -135,25 +135,35 @@ class Invoice extends Model
         return $this->hasMany(RecurringInvoice::class, 'template_invoice_id');
     }
 
+    /**
+     * Consume and return the next invoice number for this user/segment.
+     */
     public static function nextNumberForUser(User $user, ClientType $clientType, ?\DateTimeInterface $issueDate = null): string
     {
-        $year = ($issueDate ?? now())->format('Y');
-        $prefix = $clientType === ClientType::External ? 'EINV' : 'DINV';
-        $like = "{$prefix}-{$year}-%";
+        return app(\App\Services\DocumentNumberService::class)->next(
+            $user,
+            self::sequenceType($clientType),
+            $issueDate
+        );
+    }
 
-        $numbers = static::query()
-            ->where('user_id', $user->id)
-            ->where('number', 'like', $like)
-            ->lockForUpdate()
-            ->pluck('number');
+    /**
+     * Show the upcoming invoice number without consuming the sequence —
+     * for form display only.
+     */
+    public static function previewNumberForUser(User $user, ClientType $clientType, ?\DateTimeInterface $issueDate = null): string
+    {
+        return app(\App\Services\DocumentNumberService::class)->preview(
+            $user,
+            self::sequenceType($clientType),
+            $issueDate
+        );
+    }
 
-        $max = 0;
-        foreach ($numbers as $number) {
-            if (preg_match('/-(\d+)$/', (string) $number, $matches)) {
-                $max = max($max, (int) $matches[1]);
-            }
-        }
-
-        return sprintf('%s-%s-%d', $prefix, $year, $max + 1);
+    private static function sequenceType(ClientType $clientType): string
+    {
+        return $clientType === ClientType::External
+            ? \App\Services\DocumentNumberService::TYPE_INVOICE_EXTERNAL
+            : \App\Services\DocumentNumberService::TYPE_INVOICE_INVOICLY;
     }
 }

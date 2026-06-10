@@ -170,7 +170,7 @@ class InvoiceController extends Controller
             ->values()
             ->all();
 
-        $nextInvoiceNumber = Invoice::nextNumberForUser($request->user(), $segmentType, null);
+        $nextInvoiceNumber = Invoice::previewNumberForUser($request->user(), $segmentType, null);
 
         $paymentMethods = PaymentMethod::query()
             ->where('user_id', $request->user()->id)
@@ -530,7 +530,7 @@ class InvoiceController extends Controller
         $currency = strtoupper((string) $request->input('currency', $user->preferred_currency ?: 'USD'));
 
         $invoice = new Invoice([
-            'number' => $request->input('invoice_number', Invoice::nextNumberForUser($user, ClientType::External, null)),
+            'number' => $request->input('invoice_number', Invoice::previewNumberForUser($user, ClientType::External, null)),
             'issue_date' => $request->input('issue_date', now()->toDateString()),
             'due_date' => $request->input('due_date'),
             'period_from' => $request->input('period_from'),

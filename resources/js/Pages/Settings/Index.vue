@@ -17,6 +17,7 @@ defineProps({
     phoneDialOptions: { type: Array, default: () => [] },
     recurringInvoices: { type: Array, default: () => [] },
     templateInvoices: { type: Array, default: () => [] },
+    numbering: { type: Array, default: () => [] },
 });
 
 const tabs = [
@@ -66,6 +67,7 @@ const tabs = [
                     :active="activeTab === 'invoice'"
                     :countries="countries"
                     :phone-dial-options="phoneDialOptions"
+                    :numbering="numbering"
                 />
 
                 <AccountTab :active="activeTab === 'account'" />
