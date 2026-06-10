@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum InvoiceStatus: string
 {
+    case Draft = 'draft';
     case Paid = 'paid';
     case PartiallyPaid = 'partially_paid';
     case AwaitingPayment = 'awaiting_payment';
@@ -14,10 +15,16 @@ enum InvoiceStatus: string
     public function label(): string
     {
         return match ($this) {
+            self::Draft => 'Draft',
             self::Paid => 'Paid',
             self::PartiallyPaid => 'Partially paid',
             self::AwaitingPayment => 'Awaiting payment',
         };
+    }
+
+    public function isDraft(): bool
+    {
+        return $this === self::Draft;
     }
 
     /**
@@ -29,5 +36,16 @@ enum InvoiceStatus: string
     public static function manualValues(): array
     {
         return [self::Paid->value, self::AwaitingPayment->value];
+    }
+
+    /**
+     * Statuses an invoice may be created with. Draft keeps the invoice out of
+     * every money pipeline until it is finalized.
+     *
+     * @return list<string>
+     */
+    public static function selectableOnCreate(): array
+    {
+        return [self::Draft->value, self::AwaitingPayment->value, self::Paid->value];
     }
 }

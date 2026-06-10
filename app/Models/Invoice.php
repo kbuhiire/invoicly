@@ -25,8 +25,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'amount',
     'amount_paid',
     'paid_at',
+    'sent_at',
     'last_reminder_sent_at',
     'vat_amount',
+    'tax_rate_id',
     'amount_secondary',
     'currency_secondary',
     'payer_memo',
@@ -60,6 +62,7 @@ class Invoice extends Model
             'period_from' => 'date',
             'period_to' => 'date',
             'paid_at' => 'datetime',
+            'sent_at' => 'datetime',
             'last_reminder_sent_at' => 'datetime',
             'status' => InvoiceStatus::class,
             'amount' => 'decimal:2',
@@ -85,9 +88,37 @@ class Invoice extends Model
         return $this->hasMany(InvoiceLineItem::class)->orderBy('sort_order');
     }
 
+    public function taxRate(): BelongsTo
+    {
+        return $this->belongsTo(TaxRate::class);
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class)->orderByDesc('paid_at');
+    }
+
+    /**
+     * Everything that is not a draft. Drafts must never reach the money
+     * pipelines (dashboard KPIs, forecast, reminders, reconciliation, credit).
+     */
+    public function scopeFinalized($query)
+    {
+        return $query->where('status', '!=', InvoiceStatus::Draft->value);
+    }
+
+    /**
+     * Invoices that can still receive money: finalized, not a template, not
+     * fully paid. The single definition of "open" shared by forecasting,
+     * reminders, and reconciliation.
+     */
+    public function scopeOpenForPayment($query)
+    {
+        return $query
+            ->where('status', '!=', InvoiceStatus::Draft->value)
+            ->where('is_template', false)
+            ->where('status', '!=', InvoiceStatus::Paid->value)
+            ->whereRaw('amount_paid < amount');
     }
 
     /**
@@ -110,25 +141,35 @@ class Invoice extends Model
         return $this->hasMany(RecurringInvoice::class, 'template_invoice_id');
     }
 
+    /**
+     * Consume and return the next invoice number for this user/segment.
+     */
     public static function nextNumberForUser(User $user, ClientType $clientType, ?\DateTimeInterface $issueDate = null): string
     {
-        $year = ($issueDate ?? now())->format('Y');
-        $prefix = $clientType === ClientType::External ? 'EINV' : 'DINV';
-        $like = "{$prefix}-{$year}-%";
+        return app(\App\Services\DocumentNumberService::class)->next(
+            $user,
+            self::sequenceType($clientType),
+            $issueDate
+        );
+    }
 
-        $numbers = static::query()
-            ->where('user_id', $user->id)
-            ->where('number', 'like', $like)
-            ->lockForUpdate()
-            ->pluck('number');
+    /**
+     * Show the upcoming invoice number without consuming the sequence —
+     * for form display only.
+     */
+    public static function previewNumberForUser(User $user, ClientType $clientType, ?\DateTimeInterface $issueDate = null): string
+    {
+        return app(\App\Services\DocumentNumberService::class)->preview(
+            $user,
+            self::sequenceType($clientType),
+            $issueDate
+        );
+    }
 
-        $max = 0;
-        foreach ($numbers as $number) {
-            if (preg_match('/-(\d+)$/', (string) $number, $matches)) {
-                $max = max($max, (int) $matches[1]);
-            }
-        }
-
-        return sprintf('%s-%s-%d', $prefix, $year, $max + 1);
+    private static function sequenceType(ClientType $clientType): string
+    {
+        return $clientType === ClientType::External
+            ? \App\Services\DocumentNumberService::TYPE_INVOICE_EXTERNAL
+            : \App\Services\DocumentNumberService::TYPE_INVOICE_INVOICLY;
     }
 }

@@ -19,13 +19,18 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\LaravelPdf\Facades\Pdf;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InvoiceController extends Controller
 {
-    public function index(Request $request): Response
+    /**
+     * Filter state shared by the list page and the CSV export so the download
+     * always matches what is on screen.
+     *
+     * @return array{query: \Illuminate\Database\Eloquent\Builder, preStatusQuery: \Illuminate\Database\Eloquent\Builder, filters: array<string, mixed>}
+     */
+    private function filteredQuery(Request $request): array
     {
-        $this->authorize('viewAny', Invoice::class);
-
         $segment = $request->string('segment', 'external')->toString();
         if (! in_array($segment, ['invoicly', 'external'], true)) {
             $segment = 'external';
@@ -37,11 +42,7 @@ class InvoiceController extends Controller
         $statusFilter = $request->string('status')->toString();
         $dateFrom = $request->date('date_from');
         $dateTo = $request->date('date_to');
-
-        $perPage = $request->integer('per_page', 10);
-        if (! in_array($perPage, [10, 25, 50], true)) {
-            $perPage = 10;
-        }
+        $clientId = $request->integer('client_id') ?: null;
 
         $scoped = Invoice::query()
             ->where('user_id', $request->user()->id)
@@ -62,7 +63,44 @@ class InvoiceController extends Controller
             $scoped->whereDate('issue_date', '<=', $dateTo);
         }
 
-        $balanceBase = clone $scoped;
+        if ($clientId !== null) {
+            $scoped->where('client_id', $clientId);
+        }
+
+        $preStatus = clone $scoped;
+
+        $statusValues = array_map(fn (InvoiceStatus $c) => $c->value, InvoiceStatus::cases());
+        if ($statusFilter !== '' && in_array($statusFilter, $statusValues, true)) {
+            $scoped->where('status', $statusFilter);
+        }
+
+        return [
+            'query' => $scoped,
+            'preStatusQuery' => $preStatus,
+            'filters' => [
+                'segment' => $segment,
+                'search' => $search,
+                'status' => $statusFilter,
+                'date_from' => $dateFrom?->format('Y-m-d'),
+                'date_to' => $dateTo?->format('Y-m-d'),
+                'client_id' => $clientId,
+            ],
+        ];
+    }
+
+    public function index(Request $request): Response
+    {
+        $this->authorize('viewAny', Invoice::class);
+
+        ['query' => $scoped, 'preStatusQuery' => $preStatus, 'filters' => $filters] = $this->filteredQuery($request);
+
+        $perPage = $request->integer('per_page', 10);
+        if (! in_array($perPage, [10, 25, 50], true)) {
+            $perPage = 10;
+        }
+
+        // Drafts are not money owed yet — keep them out of the balance cards.
+        $balanceBase = (clone $preStatus)->finalized();
 
         // Money actually received vs. still outstanding — partial-payment aware.
         $paidTotal = bcadd((string) (clone $balanceBase)->sum('amount_paid'), '0', 2);
@@ -70,11 +108,6 @@ class InvoiceController extends Controller
         $awaitingTotal = bcsub($totalBilled, $paidTotal, 2);
         if (bccomp($awaitingTotal, '0', 2) < 0) {
             $awaitingTotal = '0.00';
-        }
-
-        $statusValues = array_map(fn (InvoiceStatus $c) => $c->value, InvoiceStatus::cases());
-        if ($statusFilter !== '' && in_array($statusFilter, $statusValues, true)) {
-            $scoped->where('status', $statusFilter);
         }
 
         $invoices = $scoped
@@ -101,16 +134,18 @@ class InvoiceController extends Controller
                 'currency_secondary' => $invoice->currency_secondary,
                 'has_attachment' => (bool) $invoice->attachment_path,
                 'is_template' => (bool) $invoice->is_template,
+                'sent_at' => $invoice->sent_at?->toDateTimeString(),
             ]);
 
         return Inertia::render('Invoices/Index', [
             'invoices' => $invoices,
-            'segment' => $segment,
+            'segment' => $filters['segment'],
             'filters' => [
-                'search' => $search,
-                'status' => $statusFilter,
-                'date_from' => $dateFrom?->format('Y-m-d'),
-                'date_to' => $dateTo?->format('Y-m-d'),
+                'search' => $filters['search'],
+                'status' => $filters['status'],
+                'date_from' => $filters['date_from'],
+                'date_to' => $filters['date_to'],
+                'client_id' => $filters['client_id'],
                 'per_page' => $perPage,
             ],
             'balance' => [
@@ -119,6 +154,53 @@ class InvoiceController extends Controller
                 'currency' => $request->user()->preferred_currency,
             ],
         ]);
+    }
+
+    /**
+     * Stream the currently filtered invoice list as CSV.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Invoice::class);
+
+        ['query' => $scoped] = $this->filteredQuery($request);
+
+        $filename = 'invoices-'.now()->format('Y-m-d').'.csv';
+        $today = now()->startOfDay();
+
+        return response()->streamDownload(function () use ($scoped, $today) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, [
+                'Number', 'Client', 'Segment', 'Status', 'Overdue', 'Issue date', 'Due date',
+                'Currency', 'Amount', 'Tax amount', 'Amount paid', 'Outstanding', 'Sent at', 'Paid at',
+            ]);
+
+            foreach ($scoped->with('client')->lazyByIdDesc(500) as $invoice) {
+                $overdue = $invoice->status !== InvoiceStatus::Paid
+                    && $invoice->status !== InvoiceStatus::Draft
+                    && $invoice->due_date !== null
+                    && $invoice->due_date->lt($today);
+
+                fputcsv($out, [
+                    $invoice->number,
+                    $invoice->client?->name,
+                    $invoice->client?->type?->value,
+                    $invoice->status->label(),
+                    $overdue ? 'yes' : 'no',
+                    $invoice->issue_date?->format('Y-m-d'),
+                    $invoice->due_date?->format('Y-m-d'),
+                    $invoice->currency,
+                    $invoice->amount,
+                    $invoice->vat_amount,
+                    $invoice->amount_paid,
+                    $invoice->outstandingAmount(),
+                    $invoice->sent_at?->format('Y-m-d H:i'),
+                    $invoice->paid_at?->format('Y-m-d H:i'),
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']);
     }
 
     public function create(Request $request): Response
@@ -168,12 +250,17 @@ class InvoiceController extends Controller
             ->values()
             ->all();
 
-        $nextInvoiceNumber = Invoice::nextNumberForUser($request->user(), $segmentType, null);
+        $nextInvoiceNumber = Invoice::previewNumberForUser($request->user(), $segmentType, null);
 
         $paymentMethods = PaymentMethod::query()
             ->where('user_id', $request->user()->id)
             ->orderBy('name')
             ->get(['id', 'name', 'details']);
+
+        $taxRates = $request->user()->taxRates()
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->get(['id', 'uuid', 'name', 'rate', 'is_default']);
 
         return Inertia::render('Invoices/Create', [
             'segment' => $segment,
@@ -182,6 +269,7 @@ class InvoiceController extends Controller
             'currencies' => $currencies,
             'nextInvoiceNumber' => $nextInvoiceNumber,
             'paymentMethods' => $paymentMethods,
+            'taxRates' => $taxRates,
         ]);
     }
 
@@ -240,6 +328,7 @@ class InvoiceController extends Controller
                 'currency' => strtoupper($data['currency']),
                 'amount' => $amount,
                 'vat_amount' => $data['vat_amount'] ?? null,
+                'tax_rate_id' => $data['tax_rate_id'] ?? null,
                 'payer_memo' => $data['payer_memo'] ?? null,
                 'payment_details' => $data['payment_details'] ?? null,
                 'invoice_type' => $data['invoice_type'] ?? 'Service',
@@ -296,6 +385,11 @@ class InvoiceController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'details']);
 
+        $taxRates = $request->user()->taxRates()
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->get(['id', 'uuid', 'name', 'rate', 'is_default']);
+
         return Inertia::render('Invoices/Edit', [
             'invoice' => [
                 'id' => $invoice->id,
@@ -305,6 +399,8 @@ class InvoiceController extends Controller
                 'issue_date' => $invoice->issue_date->format('Y-m-d'),
                 'status' => $invoice->status->value,
                 'currency' => $invoice->currency,
+                'vat_amount' => $invoice->vat_amount,
+                'tax_rate_id' => $invoice->tax_rate_id,
                 'amount_secondary' => $invoice->amount_secondary,
                 'currency_secondary' => $invoice->currency_secondary,
                 'payment_details' => $invoice->payment_details,
@@ -319,6 +415,7 @@ class InvoiceController extends Controller
             'segment' => $invoice->client->type === ClientType::Invoicly ? 'invoicly' : 'external',
             'clients' => $clients,
             'paymentMethods' => $paymentMethods,
+            'taxRates' => $taxRates,
         ]);
     }
 
@@ -344,6 +441,8 @@ class InvoiceController extends Controller
                 'status' => $data['status'],
                 'currency' => strtoupper($data['currency']),
                 'amount' => $amount,
+                'vat_amount' => $data['vat_amount'] ?? null,
+                'tax_rate_id' => $data['tax_rate_id'] ?? null,
                 'amount_secondary' => $data['amount_secondary'] ?? null,
                 'currency_secondary' => isset($data['currency_secondary']) ? strtoupper($data['currency_secondary']) : null,
                 'payment_details' => $data['payment_details'] ?? null,
@@ -387,6 +486,87 @@ class InvoiceController extends Controller
         return redirect()
             ->route('invoices.index', ['segment' => $invoice->client->type === ClientType::Invoicly ? 'invoicly' : 'external'])
             ->with('success', 'Invoice updated.');
+    }
+
+    /**
+     * Clone an invoice (with line items) into a fresh draft dated today.
+     * Payment history, sent/reminder stamps, and attachments do not carry over.
+     */
+    public function duplicate(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('view', $invoice);
+        $this->authorize('create', Invoice::class);
+
+        $invoice->load(['client', 'lineItems']);
+
+        $copy = DB::transaction(function () use ($request, $invoice) {
+            $copy = $invoice->replicate([
+                'uuid',
+                'number',
+                'amount_paid',
+                'paid_at',
+                'sent_at',
+                'last_reminder_sent_at',
+                'attachment_path',
+            ]);
+
+            $copy->status = InvoiceStatus::Draft;
+            $copy->amount_paid = '0';
+            $copy->is_template = false;
+
+            $netTermDays = $invoice->due_date !== null
+                ? $invoice->issue_date->diffInDays($invoice->due_date, false)
+                : null;
+
+            $copy->issue_date = now()->startOfDay();
+            $copy->due_date = $netTermDays !== null && $netTermDays >= 0
+                ? now()->startOfDay()->addDays($netTermDays)
+                : null;
+
+            $copy->number = Invoice::nextNumberForUser(
+                $request->user(),
+                $invoice->client->type,
+                $copy->issue_date
+            );
+
+            $copy->save();
+
+            foreach ($invoice->lineItems as $item) {
+                $copy->lineItems()->create([
+                    'description' => $item->description,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'sort_order' => $item->sort_order,
+                ]);
+            }
+
+            return $copy;
+        });
+
+        return redirect()
+            ->route('invoices.edit', $copy)
+            ->with('success', "Invoice duplicated as draft {$copy->number}.");
+    }
+
+    /**
+     * Finalize a draft (draft → awaiting payment) and/or stamp the invoice as
+     * sent. One-way: finalized invoices never go back to draft.
+     */
+    public function finalize(Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('update', $invoice);
+
+        if ($invoice->status === InvoiceStatus::Draft) {
+            $invoice->status = InvoiceStatus::AwaitingPayment;
+        }
+
+        if ($invoice->sent_at === null) {
+            $invoice->sent_at = now();
+        }
+
+        $invoice->save();
+
+        return back()->with('success', "Invoice {$invoice->number} marked as sent.");
     }
 
     public function destroy(Invoice $invoice): RedirectResponse
@@ -447,7 +627,7 @@ class InvoiceController extends Controller
         $currency = strtoupper((string) $request->input('currency', $user->preferred_currency ?: 'USD'));
 
         $invoice = new Invoice([
-            'number' => $request->input('invoice_number', Invoice::nextNumberForUser($user, ClientType::External, null)),
+            'number' => $request->input('invoice_number', Invoice::previewNumberForUser($user, ClientType::External, null)),
             'issue_date' => $request->input('issue_date', now()->toDateString()),
             'due_date' => $request->input('due_date'),
             'period_from' => $request->input('period_from'),
@@ -522,12 +702,6 @@ class InvoiceController extends Controller
      */
     private function lineItemsTotal(array $lineItems): string
     {
-        $sum = '0.00';
-        foreach ($lineItems as $row) {
-            $line = bcmul((string) $row['quantity'], (string) $row['unit_price'], 2);
-            $sum = bcadd($sum, $line, 2);
-        }
-
-        return $sum;
+        return \App\Support\LineItems::total($lineItems);
     }
 }

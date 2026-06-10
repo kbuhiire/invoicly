@@ -2,14 +2,18 @@
 
 use App\Http\Controllers\ApiTokenController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\CreditNoteController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\ReconciliationController;
+use App\Http\Controllers\QuoteController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecurringInvoiceController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\TaxRateController;
 use App\Http\Controllers\UserPreferredCurrencyController;
 use App\Http\Controllers\WebhookSettingsController;
 use Illuminate\Support\Facades\Route;
@@ -33,15 +37,35 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('invoices/export', [InvoiceController::class, 'export'])->name('invoices.export');
+    Route::get('payments/export', [PaymentController::class, 'export'])->name('payments.export');
     Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
     Route::get('invoices/{invoice}/attachment', [InvoiceController::class, 'downloadAttachment'])->name('invoices.attachment');
     Route::post('invoices/preview', [InvoiceController::class, 'previewInvoice'])->name('invoices.preview');
+    Route::post('invoices/{invoice}/finalize', [InvoiceController::class, 'finalize'])->name('invoices.finalize');
+    Route::post('invoices/{invoice}/duplicate', [InvoiceController::class, 'duplicate'])->name('invoices.duplicate');
     Route::resource('invoices', InvoiceController::class)->except(['show']);
     Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store'])->name('invoices.payments.store');
     Route::delete('payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
+    Route::post('quotes/{quote}/send', [QuoteController::class, 'markSent'])->name('quotes.send');
+    Route::post('quotes/{quote}/accept', [QuoteController::class, 'accept'])->name('quotes.accept');
+    Route::post('quotes/{quote}/decline', [QuoteController::class, 'decline'])->name('quotes.decline');
+    Route::post('quotes/{quote}/convert', [QuoteController::class, 'convert'])->name('quotes.convert');
+    Route::get('quotes/{quote}/pdf', [QuoteController::class, 'pdf'])->name('quotes.pdf');
+    Route::resource('quotes', QuoteController::class)->except(['show']);
+    Route::get('credit-notes', [CreditNoteController::class, 'index'])->name('credit-notes.index');
+    Route::post('credit-notes', [CreditNoteController::class, 'store'])->name('credit-notes.store');
+    Route::post('credit-notes/{creditNote}/apply', [CreditNoteController::class, 'apply'])->name('credit-notes.apply');
+    Route::post('credit-notes/{creditNote}/void', [CreditNoteController::class, 'void'])->name('credit-notes.void');
+    Route::get('credit-notes/{creditNote}/pdf', [CreditNoteController::class, 'pdf'])->name('credit-notes.pdf');
+    Route::get('reports/aging', [ReportController::class, 'aging'])->name('reports.aging');
+    Route::get('reports/aging/export', [ReportController::class, 'agingExport'])->name('reports.aging.export');
     Route::get('reconciliation', [ReconciliationController::class, 'index'])->name('reconciliation.index');
     Route::post('reconciliation/{payment}/match', [ReconciliationController::class, 'match'])->name('reconciliation.match');
     Route::delete('reconciliation/{payment}', [ReconciliationController::class, 'dismiss'])->name('reconciliation.dismiss');
+    Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
+    Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
+    Route::get('/clients/{client}', [ClientController::class, 'show'])->name('clients.show');
     Route::patch('/clients/{client}', [ClientController::class, 'update'])->name('clients.update');
     Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
     Route::post('/payment-methods', [PaymentMethodController::class, 'store'])->name('payment-methods.store');
@@ -71,6 +95,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/address/edit', [SettingsController::class, 'editAddress'])->name('settings.address.edit');
     Route::patch('/settings/address', [SettingsController::class, 'updateAddress'])->name('settings.address.update');
     Route::patch('/settings/invoice', [SettingsController::class, 'updateInvoice'])->name('settings.invoice.update');
+    Route::patch('/settings/numbering', [SettingsController::class, 'updateNumbering'])->name('settings.numbering.update');
+    Route::post('/settings/tax-rates', [TaxRateController::class, 'store'])->name('settings.tax-rates.store');
+    Route::patch('/settings/tax-rates/{taxRate}', [TaxRateController::class, 'update'])->name('settings.tax-rates.update');
+    Route::delete('/settings/tax-rates/{taxRate}', [TaxRateController::class, 'destroy'])->name('settings.tax-rates.destroy');
     Route::patch('/settings/invoice/address', [SettingsController::class, 'updateInvoiceAddress'])->name('settings.invoice.address.update');
     Route::patch('/settings/invoice/phone', [SettingsController::class, 'updateInvoicePhone'])->name('settings.invoice.phone.update');
     Route::get('/settings/invoice/preview', [SettingsController::class, 'previewInvoicePdf'])->name('settings.invoice.preview');

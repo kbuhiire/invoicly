@@ -28,6 +28,7 @@ class InvoiceResource extends JsonResource
             'vat_id' => $this->vat_id,
             'tax_id' => $this->tax_id,
             'is_template' => (bool) $this->is_template,
+            'sent_at' => $this->sent_at?->toIso8601String(),
             'has_attachment' => (bool) $this->attachment_path,
             'pdf_url' => url("/api/v1/invoices/{$this->id}/pdf"),
             'client' => $this->whenLoaded('client', fn () => new ClientResource($this->client)),

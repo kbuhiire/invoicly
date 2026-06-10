@@ -40,6 +40,8 @@ class UpdateInvoiceRequest extends FormRequest
             'issue_date' => ['required', 'date'],
             'status' => ['required', Rule::enum(InvoiceStatus::class)],
             'currency' => ['required', 'string', 'size:3'],
+            'vat_amount' => ['nullable', 'numeric', 'min:0'],
+            'tax_rate_id' => ['nullable', 'integer', Rule::exists('tax_rates', 'id')->where('user_id', $userId)],
             'amount_secondary' => ['nullable', 'numeric', 'min:0'],
             'currency_secondary' => ['nullable', 'string', 'size:3', 'required_with:amount_secondary'],
             'is_template' => ['sometimes', 'boolean'],
@@ -50,6 +52,31 @@ class UpdateInvoiceRequest extends FormRequest
             'line_items.*.description' => ['required', 'string', 'max:255'],
             'line_items.*.quantity' => ['required', 'numeric', 'min:0.001'],
             'line_items.*.unit_price' => ['required', 'numeric', 'min:0'],
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function ($validator) {
+                $invoice = $this->route('invoice');
+
+                if (! $invoice instanceof \App\Models\Invoice) {
+                    return;
+                }
+
+                $requestedDraft = $this->input('status') === InvoiceStatus::Draft->value;
+
+                // Finalizing is one-way: a sent/paid invoice (or one with
+                // payments) can never be demoted back to draft.
+                if ($requestedDraft && ! $invoice->status->isDraft()) {
+                    $validator->errors()->add('status', 'A finalized invoice cannot be reverted to draft.');
+                }
+
+                if ($requestedDraft && $invoice->payments()->exists()) {
+                    $validator->errors()->add('status', 'An invoice with recorded payments cannot be a draft.');
+                }
+            },
         ];
     }
 }

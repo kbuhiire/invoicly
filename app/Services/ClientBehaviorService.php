@@ -32,7 +32,10 @@ class ClientBehaviorService
 
     public function recalculate(Client $client): void
     {
-        $invoices = $client->invoices()->where('is_template', false)->get();
+        $invoices = $client->invoices()
+            ->where('is_template', false)
+            ->finalized()
+            ->get();
 
         // Invoices actually settled with a recorded date carry payment timing.
         $paid = $invoices->filter(

@@ -15,6 +15,7 @@ const props = defineProps({
     segment: { type: String, required: true },
     clients: { type: Array, required: true },
     paymentMethods: { type: Array, default: () => [] },
+    taxRates: { type: Array, default: () => [] },
 });
 
 const form = useForm({
@@ -23,6 +24,8 @@ const form = useForm({
     issue_date: props.invoice.issue_date,
     status: props.invoice.status,
     currency: props.invoice.currency,
+    vat_amount: props.invoice.vat_amount ?? '',
+    tax_rate_id: props.invoice.tax_rate_id ?? '',
     amount_secondary: props.invoice.amount_secondary ?? '',
     currency_secondary: props.invoice.currency_secondary ?? '',
     payment_details: props.invoice.payment_details ?? '',
@@ -35,6 +38,25 @@ const form = useForm({
         unit_price: l.unit_price,
     })),
 });
+
+// Recompute the tax amount from the current line items when a rate is picked;
+// the amount field stays freely editable afterwards.
+function onTaxRateChange() {
+    const rate = props.taxRates.find((r) => r.id === form.tax_rate_id);
+    if (!rate) {
+        return;
+    }
+    let subtotal = 0;
+    for (const line of form.line_items) {
+        const q = parseFloat(line.quantity);
+        const p = parseFloat(line.unit_price);
+        if (!Number.isNaN(q) && !Number.isNaN(p)) {
+            subtotal += q * p;
+        }
+    }
+    const vat = (subtotal * Number(rate.rate)) / 100;
+    form.vat_amount = vat > 0 ? vat.toFixed(2) : '';
+}
 
 // ── Payment method modal ──────────────────────────────────────────────────────
 const pmModalOpen = ref(false);
@@ -177,6 +199,7 @@ function submit() {
                                 v-model="form.status"
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                             >
+                                <option v-if="invoice.status === 'draft'" value="draft">Draft</option>
                                 <option value="awaiting_payment">Awaiting payment</option>
                                 <option value="paid">Paid</option>
                             </select>
@@ -214,6 +237,34 @@ function submit() {
                                 </label>
                             </div>
                             <InputError class="mt-2" :message="form.errors.attachment" />
+                        </div>
+                    </div>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <InputLabel value="Tax rate" />
+                            <select
+                                v-model="form.tax_rate_id"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                                @change="onTaxRateChange"
+                            >
+                                <option value="">No tax rate</option>
+                                <option v-for="rate in taxRates" :key="rate.id" :value="rate.id">
+                                    {{ rate.name }} ({{ Number(rate.rate) }}%)
+                                </option>
+                            </select>
+                            <InputError class="mt-2" :message="form.errors.tax_rate_id" />
+                        </div>
+                        <div>
+                            <InputLabel :value="`Tax amount (${form.currency})`" />
+                            <TextInput
+                                v-model="form.vat_amount"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                class="mt-1 block w-full"
+                            />
+                            <InputError class="mt-2" :message="form.errors.vat_amount" />
                         </div>
                     </div>
 
@@ -287,9 +338,10 @@ function submit() {
                                     <button
                                         type="button"
                                         class="text-sm text-red-600 hover:text-red-800"
+                                        :aria-label="`Remove line item ${index + 1}`"
                                         @click="removeLine(index)"
                                     >
-                                        ✕
+                                        <span aria-hidden="true">✕</span>
                                     </button>
                                 </div>
                             </div>

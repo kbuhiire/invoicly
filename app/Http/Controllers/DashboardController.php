@@ -30,6 +30,7 @@ class DashboardController extends Controller
 
         $base = Invoice::query()
             ->where('user_id', $user->id)
+            ->finalized()
             ->where(function ($q) {
                 $q->where('is_template', false)
                     ->orWhere('status', InvoiceStatus::Paid->value);

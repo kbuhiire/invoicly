@@ -5,6 +5,7 @@ import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
+import ToastHub from '@/Components/ToastHub.vue';
 import { Link, usePage } from '@inertiajs/vue3';
 
 const showingNavigationDropdown = ref(false);
@@ -32,6 +33,7 @@ const invoicesActive = computed(
 
 <template>
     <div class="min-h-[100dvh] bg-gray-50">
+        <ToastHub />
         <!-- ── Floating island app bar ───────────────────────────── -->
         <div class="sticky top-0 z-30 px-4 pt-4">
             <nav class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 rounded-2xl border border-gray-200/70 bg-white/80 pl-4 pr-3 shadow-[0_10px_30px_-15px_rgba(15,23,42,0.18)] backdrop-blur-xl">
@@ -42,7 +44,11 @@ const invoicesActive = computed(
                     <div class="hidden items-center gap-1 sm:flex">
                         <NavLink :href="route('dashboard')" :active="route().current('dashboard')">Dashboard</NavLink>
                         <NavLink :href="route('invoices.index', { segment: 'external' })" :active="invoicesActive">Invoices</NavLink>
+                        <NavLink :href="route('quotes.index')" :active="route().current('quotes.*')">Quotes</NavLink>
+                        <NavLink :href="route('clients.index', { segment: 'external' })" :active="route().current('clients.*')">Clients</NavLink>
                         <NavLink :href="route('reconciliation.index')" :active="route().current('reconciliation.index')">Payments</NavLink>
+                        <NavLink :href="route('credit-notes.index')" :active="route().current('credit-notes.*')">Credit notes</NavLink>
+                        <NavLink :href="route('reports.aging')" :active="route().current('reports.*')">Reports</NavLink>
                     </div>
                 </div>
 
@@ -116,7 +122,11 @@ const invoicesActive = computed(
                     <div class="space-y-1">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">Dashboard</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('invoices.index', { segment: 'external' })" :active="invoicesActive">Invoices</ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('quotes.index')" :active="route().current('quotes.*')">Quotes</ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('clients.index', { segment: 'external' })" :active="route().current('clients.*')">Clients</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('reconciliation.index')" :active="route().current('reconciliation.index')">Payments</ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('credit-notes.index')" :active="route().current('credit-notes.*')">Credit notes</ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('reports.aging')" :active="route().current('reports.*')">Reports</ResponsiveNavLink>
                     </div>
                     <div class="mt-3 border-t border-gray-100 pt-3">
                         <div class="flex items-center gap-3 px-4 pb-2">

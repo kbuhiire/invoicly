@@ -1,12 +1,15 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import DangerButton from '@/Components/DangerButton.vue';
+import EmptyState from '@/Components/EmptyState.vue';
 import Modal from '@/Components/Modal.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import StatusBadge from '@/Components/StatusBadge.vue';
+import TableSkeleton from '@/Components/TableSkeleton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps({
     invoices: { type: Object, required: true },
@@ -77,10 +80,15 @@ function visitIndex(extra = {}) {
             date_from: dateFrom.value || undefined,
             date_to: dateTo.value || undefined,
             per_page: perPage.value || undefined,
+            client_id: props.filters.client_id || undefined,
             ...extra,
         },
         { preserveState: true, replace: true },
     );
+}
+
+function clearClientFilter() {
+    visitIndex({ client_id: undefined });
 }
 
 let searchTimer;
@@ -202,6 +210,49 @@ const rowMenuOpen = ref(null);
 function toggleRowMenu(id) {
     rowMenuOpen.value = rowMenuOpen.value === id ? null : id;
 }
+
+function finalizeInvoice(inv) {
+    rowMenuOpen.value = null;
+    router.post(route('invoices.finalize', inv.uuid), {}, { preserveScroll: true });
+}
+
+function duplicateInvoice(inv) {
+    rowMenuOpen.value = null;
+    router.post(route('invoices.duplicate', inv.uuid));
+}
+
+const listLoading = ref(false);
+let removeStartListener;
+let removeFinishListener;
+onMounted(() => {
+    removeStartListener = router.on('start', (event) => {
+        if (event.detail.visit.url.pathname === new URL(route('invoices.index')).pathname) {
+            listLoading.value = true;
+        }
+    });
+    removeFinishListener = router.on('finish', () => {
+        listLoading.value = false;
+    });
+});
+onUnmounted(() => {
+    removeStartListener?.();
+    removeFinishListener?.();
+});
+
+const hasActiveFilters = computed(
+    () => Boolean(search.value || status.value || dateFrom.value || dateTo.value),
+);
+
+const exportUrl = computed(() =>
+    route('invoices.export', {
+        segment: props.segment,
+        search: search.value || undefined,
+        status: status.value || undefined,
+        date_from: dateFrom.value || undefined,
+        date_to: dateTo.value || undefined,
+        client_id: props.filters.client_id || undefined,
+    }),
+);
 </script>
 
 <template>
@@ -210,12 +261,6 @@ function toggleRowMenu(id) {
     <AuthenticatedLayout>
         <div class="pb-16">
             <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-                <div
-                    v-if="page.props.flash?.success"
-                    class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
-                >
-                    {{ page.props.flash.success }}
-                </div>
                 <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <h1 class="font-display text-3xl font-semibold tracking-tight text-gray-900">Invoices</h1>
@@ -277,6 +322,21 @@ function toggleRowMenu(id) {
                 </div>
 
                 <div
+                    v-if="filters.client_id"
+                    class="mb-4 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-sm text-brand-800"
+                >
+                    Filtered by a single client
+                    <button
+                        type="button"
+                        class="rounded-full p-0.5 transition hover:bg-brand-100"
+                        aria-label="Clear client filter"
+                        @click="clearClientFilter"
+                    >
+                        <span class="text-base leading-none" aria-hidden="true">×</span>
+                    </button>
+                </div>
+
+                <div
                     class="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
                 >
                     <div class="relative flex-1">
@@ -311,6 +371,7 @@ function toggleRowMenu(id) {
                             class="rounded-full border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm"
                         >
                             <option value="">Status</option>
+                            <option value="draft">Draft</option>
                             <option value="paid">Paid</option>
                             <option value="partially_paid">Partially paid</option>
                             <option value="awaiting_payment">Awaiting payment</option>
@@ -322,15 +383,15 @@ function toggleRowMenu(id) {
                         >
                             Create invoice
                         </PrimaryButton>
-                        <button
-                            type="button"
-                            class="rounded-full border border-gray-200 bg-white p-2 text-gray-600 shadow-sm transition hover:bg-gray-50 hover:text-gray-900"
-                            aria-label="More actions"
+                        <a
+                            :href="exportUrl"
+                            class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 hover:text-gray-900"
                         >
-                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path d="M10 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM10 11.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM11.5 15.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                             </svg>
-                        </button>
+                            Export CSV
+                        </a>
                     </div>
                 </div>
 
@@ -385,7 +446,28 @@ function toggleRowMenu(id) {
                             Invoice settings
                         </button>
                     </div>
-                    <div class="overflow-x-auto">
+                    <TableSkeleton v-if="listLoading" :rows="5" :cols="6" />
+                    <EmptyState
+                        v-else-if="invoices.data.length === 0"
+                        title="No invoices found"
+                        :description="
+                            hasActiveFilters
+                                ? 'No invoices match your current filters. Try adjusting the search or date range.'
+                                : 'Create your first invoice and it will show up here along with its payment status.'
+                        "
+                    >
+                        <template #action>
+                            <PrimaryButton
+                                v-if="!hasActiveFilters"
+                                type="button"
+                                class="rounded-full px-5 py-2.5"
+                                @click="addInvoiceModalOpen = true"
+                            >
+                                Create invoice
+                            </PrimaryButton>
+                        </template>
+                    </EmptyState>
+                    <div v-else class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-100 text-sm">
                             <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                                 <tr>
@@ -432,10 +514,9 @@ function toggleRowMenu(id) {
                                     <td class="px-5 py-4">
                                         <span
                                             v-if="inv.has_attachment"
-                                            class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                            style="background: #e0f2fe; color: #0369a1"
+                                            class="inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800 dark:bg-sky-950 dark:text-sky-300"
                                         >
-                                            UPLOADED
+                                            Uploaded
                                         </span>
                                         <span v-else class="text-xs text-gray-400">—</span>
                                     </td>
@@ -458,27 +539,7 @@ function toggleRowMenu(id) {
                                             }}
                                         </div>
                                         <div class="mt-1">
-                                            <span
-                                                v-if="inv.status === 'paid'"
-                                                class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                                style="background: #e6f4ea; color: #1e8e3e"
-                                            >
-                                                Paid
-                                            </span>
-                                            <span
-                                                v-else-if="inv.status === 'partially_paid'"
-                                                class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                                style="background: #e0e7ff; color: #3730a3"
-                                            >
-                                                Partially paid
-                                            </span>
-                                            <span
-                                                v-else
-                                                class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                                style="background: #fef7e0; color: #b05a00"
-                                            >
-                                                Awaiting payment
-                                            </span>
+                                            <StatusBadge :status="inv.status" kind="invoice" />
                                         </div>
                                         <div
                                             v-if="inv.status === 'partially_paid'"
@@ -510,13 +571,36 @@ function toggleRowMenu(id) {
                                                 Edit
                                             </Link>
                                             <button
-                                                v-if="inv.status !== 'paid' && !inv.is_template"
+                                                v-if="inv.status === 'draft'"
+                                                type="button"
+                                                class="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                                                @click="finalizeInvoice(inv)"
+                                            >
+                                                Mark as sent
+                                            </button>
+                                            <button
+                                                v-if="inv.status !== 'paid' && inv.status !== 'draft' && !inv.is_template"
                                                 type="button"
                                                 class="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
                                                 @click="openPaymentModal(inv)"
                                             >
                                                 Record payment
                                             </button>
+                                            <button
+                                                type="button"
+                                                class="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                                                @click="duplicateInvoice(inv)"
+                                            >
+                                                Duplicate
+                                            </button>
+                                            <Link
+                                                v-if="inv.status !== 'paid' && inv.status !== 'draft' && !inv.is_template"
+                                                :href="route('credit-notes.index', { invoice_id: inv.id })"
+                                                class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                                @click="rowMenuOpen = null"
+                                            >
+                                                Issue credit note
+                                            </Link>
                                             <a
                                                 :href="route('invoices.pdf', inv.uuid)"
                                                 class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -807,20 +891,17 @@ function toggleRowMenu(id) {
             </div>
         </Modal>
 
-        <div
-            v-if="currencyOpen"
-            class="fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-4"
-            @click.self="currencyOpen = false"
-        >
-            <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+        <Modal :show="currencyOpen" max-width="md" @close="currencyOpen = false">
+            <div class="px-6 py-5">
                 <h3 class="text-lg font-semibold text-gray-900">Display currency</h3>
                 <p class="mt-1 text-sm text-gray-500">
                     Used for balance summary totals (3-letter ISO code, uppercase).
                 </p>
                 <form class="mt-4 space-y-4" @submit.prevent="submitCurrency">
                     <div>
-                        <label class="text-xs font-medium text-gray-600">Currency</label>
+                        <label for="display-currency" class="text-xs font-medium text-gray-600">Currency</label>
                         <TextInput
+                            id="display-currency"
                             v-model="currencyForm.preferred_currency"
                             type="text"
                             class="mt-1 block w-full uppercase"
@@ -841,6 +922,6 @@ function toggleRowMenu(id) {
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
     </AuthenticatedLayout>
 </template>

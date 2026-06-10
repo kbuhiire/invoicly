@@ -5,7 +5,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import Modal from '@/Components/Modal.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps({
     segment: { type: String, required: true },
@@ -14,6 +14,7 @@ const props = defineProps({
     currencies: { type: Array, required: true },
     nextInvoiceNumber: { type: String, default: '' },
     paymentMethods: { type: Array, default: () => [] },
+    taxRates: { type: Array, default: () => [] },
 });
 
 const page = usePage();
@@ -109,6 +110,20 @@ const clientTab = ref('existing');
 const clientPickerOpen = ref(false);
 const clientSearch = ref('');
 const stepMessage = ref('');
+const stepMessageBanner = ref(null);
+
+// Surface the validation banner — it sits above the step content and can be
+// off-screen when the user submits from the bottom of a long form.
+watch(stepMessage, async (message) => {
+    if (!message) {
+        return;
+    }
+    await nextTick();
+    stepMessageBanner.value?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+
+// Flat list of server-side validation errors, shown as one summary banner.
+const serverErrorSummary = computed(() => Object.values(form.errors ?? {}));
 
 const form = useForm({
     segment: props.segment,
@@ -130,6 +145,7 @@ const form = useForm({
     status: 'awaiting_payment',
     currency: user.value?.preferred_currency || 'UGX',
     vat_amount: '',
+    tax_rate_id: props.taxRates.find((r) => r.is_default)?.id ?? '',
     payer_memo: '',
     payment_details: '',
     invoice_type: 'Service',
@@ -297,6 +313,35 @@ const vatAmountNum = computed(() => {
 
 const totalAmount = computed(() => subtotalAmount.value + vatAmountNum.value);
 
+// Auto-compute VAT from the selected tax rate until the user hand-edits the
+// amount; re-picking a rate takes over again.
+const vatManuallyEdited = ref(false);
+
+const selectedTaxRate = computed(
+    () => props.taxRates.find((r) => r.id === form.tax_rate_id) ?? null,
+);
+
+function applyTaxRate() {
+    if (!selectedTaxRate.value || vatManuallyEdited.value) {
+        return;
+    }
+    const computedVat = (subtotalAmount.value * Number(selectedTaxRate.value.rate)) / 100;
+    form.vat_amount = computedVat > 0 ? computedVat.toFixed(2) : '';
+}
+
+watch(
+    () => form.tax_rate_id,
+    () => {
+        vatManuallyEdited.value = false;
+        applyTaxRate();
+    },
+);
+watch(subtotalAmount, () => applyTaxRate());
+
+function onVatInput() {
+    vatManuallyEdited.value = true;
+}
+
 function stripFormatting(val) {
     return String(val ?? '').replace(/,/g, '');
 }
@@ -378,6 +423,7 @@ async function fetchPreview() {
             period_to: form.period_to || null,
             currency: form.currency,
             vat_amount: form.vat_amount || null,
+            tax_rate_id: form.tax_rate_id || null,
             payer_memo: form.payer_memo || null,
             payment_details: form.payment_details || null,
             invoice_type: form.invoice_type,
@@ -533,15 +579,16 @@ function goBack() {
     }
 }
 
-function submitInvoice() {
+function submitInvoice(status = null) {
     stepMessage.value = '';
-    form.transform((data) => ({ ...data, share_invoice: shareInvoice.value })).post(
-        route('invoices.store'),
-        {
-            forceFormData: true,
-            preserveScroll: true,
-        },
-    );
+    form.transform((data) => ({
+        ...data,
+        status: status ?? data.status,
+        share_invoice: shareInvoice.value,
+    })).post(route('invoices.store'), {
+        forceFormData: true,
+        preserveScroll: true,
+    });
 }
 
 const pageTitle = computed(() =>
@@ -751,6 +798,27 @@ onUnmounted(() => {
 
                 <div class="flex flex-col gap-6 lg:flex-row lg:items-start">
                     <div class="min-w-0 flex-1 space-y-6">
+                        <div
+                            v-if="stepMessage"
+                            ref="stepMessageBanner"
+                            role="alert"
+                            class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+                        >
+                            <svg class="mt-0.5 h-4 w-4 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                            </svg>
+                            {{ stepMessage }}
+                        </div>
+                        <div
+                            v-if="serverErrorSummary.length"
+                            role="alert"
+                            class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900"
+                        >
+                            <p class="font-medium">Please fix the following before continuing:</p>
+                            <ul class="mt-1 list-inside list-disc space-y-0.5">
+                                <li v-for="(message, idx) in serverErrorSummary" :key="idx">{{ message }}</li>
+                            </ul>
+                        </div>
                         <div v-show="step === 1" class="space-y-6">
                             <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
                                 <h2 class="text-lg font-semibold text-gray-900">Select client</h2>
@@ -1268,12 +1336,24 @@ onUnmounted(() => {
                                     }}</span>
                                 </div>
 
-                                <div class="mt-3">
+                                <div class="mt-3 space-y-2">
+                                    <select
+                                        v-if="taxRates.length > 0"
+                                        v-model="form.tax_rate_id"
+                                        class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                                        aria-label="Tax rate"
+                                    >
+                                        <option value="">No tax rate</option>
+                                        <option v-for="rate in taxRates" :key="rate.id" :value="rate.id">
+                                            {{ rate.name }} ({{ Number(rate.rate) }}%)
+                                        </option>
+                                    </select>
                                     <TextInput
                                         v-model="form.vat_amount"
                                         type="text"
                                         class="block w-full"
                                         :placeholder="`VAT/GST or equivalent in ${form.currency} ${currencySymbol}`"
+                                        @input="onVatInput"
                                     />
                                     <InputError class="mt-1.5" :message="form.errors.vat_amount" />
                                 </div>
@@ -1351,9 +1431,10 @@ onUnmounted(() => {
                                             <button
                                                 type="button"
                                                 class="mb-1 text-sm text-red-500 hover:text-red-700"
+                                                :aria-label="`Remove line item ${index + 1}`"
                                                 @click="removeLine(index)"
                                             >
-                                                ✕
+                                                <span aria-hidden="true">✕</span>
                                             </button>
                                         </div>
                                     </div>
@@ -1875,15 +1956,24 @@ onUnmounted(() => {
                     >
                         Continue
                     </button>
-                    <button
-                        v-else
-                        type="button"
-                        class="rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-neutral-900 shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-neutral-900 disabled:opacity-50"
-                        :disabled="form.processing"
-                        @click="submitInvoice"
-                    >
-                        Create invoice
-                    </button>
+                    <template v-else>
+                        <button
+                            type="button"
+                            class="rounded-full border border-neutral-600 bg-transparent px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-neutral-900 disabled:opacity-50"
+                            :disabled="form.processing"
+                            @click="submitInvoice('draft')"
+                        >
+                            Save as draft
+                        </button>
+                        <button
+                            type="button"
+                            class="rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-neutral-900 shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-neutral-900 disabled:opacity-50"
+                            :disabled="form.processing"
+                            @click="submitInvoice()"
+                        >
+                            Create invoice
+                        </button>
+                    </template>
                 </div>
             </div>
         </div>

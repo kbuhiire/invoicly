@@ -2,7 +2,6 @@
 
 namespace App\Services\Reminders;
 
-use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\ReminderLog;
 use App\Models\User;
@@ -37,9 +36,7 @@ class ReminderService
 
         $invoices = Invoice::query()
             ->where('user_id', $user->id)
-            ->where('is_template', false)
-            ->where('status', '!=', InvoiceStatus::Paid->value)
-            ->whereRaw('amount_paid < amount')
+            ->openForPayment()
             ->whereNotNull('due_date')
             ->with(['client', 'user'])
             ->get();
