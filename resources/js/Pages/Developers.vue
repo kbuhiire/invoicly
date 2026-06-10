@@ -1253,6 +1253,893 @@ puts client`,
         },
     },
 
+    // ── Quotes ──────────────────────────────────────────────────────────────────
+    {
+        id: 'quotes-list',
+        group: 'quotes',
+        groupLabel: 'Quotes',
+        title: 'List Quotes',
+        method: 'GET',
+        path: '/api/v1/quotes',
+        description: 'Returns a paginated list of all quotes belonging to the authenticated user. The status field is the effective status — sent quotes past their expiry date are reported as expired, and you can filter on it directly. Results are ordered by issue date descending.',
+        features: null,
+        note: null,
+        ability: 'quotes:read',
+        params: [
+            { name: 'status',    in: 'query', type: 'string',  required: false, description: 'Filter by status: draft, sent, accepted, declined, expired' },
+            { name: 'client_id', in: 'query', type: 'integer', required: false, description: 'Filter quotes for a specific client by their ID' },
+            { name: 'per_page',  in: 'query', type: 'integer', required: false, description: 'Number of results per page (default: 15)' },
+        ],
+        response: `{
+  "data": [
+    {
+      "id": 12,
+      "uuid": "8a1f3c2e-9b40-4c1d-b7e2-5d6f0a9c3e11",
+      "number": "QUO-2026-1",
+      "status": "sent",
+      "stored_status": "sent",
+      "issue_date": "2026-06-01",
+      "expiry_date": "2026-07-01",
+      "currency": "UGX",
+      "amount": 300.00,
+      "vat_amount": null,
+      "payer_memo": null,
+      "sent_at": "2026-06-01T09:00:00+00:00",
+      "converted_invoice_id": null,
+      "client": { "id": 4, "name": "Acme Corporation" },
+      "line_items": [
+        {
+          "id": 31,
+          "description": "Design work",
+          "quantity": 2,
+          "unit_price": 150.00,
+          "line_total": 300.00,
+          "sort_order": 0
+        }
+      ],
+      "created_at": "2026-06-01T08:59:00+00:00",
+      "updated_at": "2026-06-01T09:00:00+00:00"
+    }
+  ],
+  "links": { "first": "…", "last": "…", "prev": null, "next": null },
+  "meta": { "current_page": 1, "per_page": 15, "total": 1 }
+}`,
+        code: {
+            curl: `curl --request GET \\
+  --url 'https://app.invoicly.io/api/v1/quotes?status=sent&per_page=15' \\
+  --header 'Authorization: Bearer YOUR_API_TOKEN' \\
+  --header 'Accept: application/json'`,
+            php: `<?php
+
+use GuzzleHttp\\Client;
+
+$response = (new Client())->get(
+    'https://app.invoicly.io/api/v1/quotes',
+    [
+        'headers' => ['Authorization' => 'Bearer YOUR_API_TOKEN', 'Accept' => 'application/json'],
+        'query'   => ['status' => 'sent', 'per_page' => 15],
+    ]
+);
+
+$quotes = json_decode($response->getBody()->getContents(), true)['data'];`,
+            node: `const axios = require('axios');
+
+const { data } = await axios.get(
+  'https://app.invoicly.io/api/v1/quotes',
+  {
+    headers: { Authorization: 'Bearer YOUR_API_TOKEN' },
+    params: { status: 'sent', per_page: 15 },
+  }
+);
+
+console.log(data.data);`,
+            python: `import requests
+
+response = requests.get(
+    'https://app.invoicly.io/api/v1/quotes',
+    headers={'Authorization': 'Bearer YOUR_API_TOKEN'},
+    params={'status': 'sent', 'per_page': 15},
+)
+
+print(response.json()['data'])`,
+            ruby: `require 'net/http'
+require 'json'
+
+uri = URI('https://app.invoicly.io/api/v1/quotes?status=sent&per_page=15')
+req = Net::HTTP::Get.new(uri)
+req['Authorization'] = 'Bearer YOUR_API_TOKEN'
+req['Accept']        = 'application/json'
+
+res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+puts JSON.parse(res.body)['data']`,
+        },
+    },
+    {
+        id: 'quotes-get',
+        group: 'quotes',
+        groupLabel: 'Quotes',
+        title: 'Get a Quote',
+        method: 'GET',
+        path: '/api/v1/quotes/{uuid}',
+        description: 'Retrieves a single quote by its uuid, including the client and line items. The status field derives expired for sent quotes whose expiry date has passed; stored_status is the raw stored state.',
+        features: null,
+        note: null,
+        ability: 'quotes:read',
+        params: [
+            { name: 'uuid', in: 'path', type: 'string', required: true, description: 'The uuid of the quote to retrieve' },
+        ],
+        response: `{
+  "data": {
+    "id": 12,
+    "uuid": "8a1f3c2e-9b40-4c1d-b7e2-5d6f0a9c3e11",
+    "number": "QUO-2026-1",
+    "status": "expired",
+    "stored_status": "sent",
+    "issue_date": "2026-06-01",
+    "expiry_date": "2026-06-05",
+    "currency": "UGX",
+    "amount": 300.00,
+    "vat_amount": null,
+    "payer_memo": "50% deposit to start",
+    "sent_at": "2026-06-01T09:00:00+00:00",
+    "converted_invoice_id": null,
+    "client": { "id": 4, "name": "Acme Corporation" },
+    "line_items": [
+      {
+        "id": 31,
+        "description": "Design work",
+        "quantity": 2,
+        "unit_price": 150.00,
+        "line_total": 300.00,
+        "sort_order": 0
+      }
+    ],
+    "created_at": "2026-06-01T08:59:00+00:00",
+    "updated_at": "2026-06-01T09:00:00+00:00"
+  }
+}`,
+        code: {
+            curl: `curl --request GET \\
+  --url https://app.invoicly.io/api/v1/quotes/QUOTE_UUID \\
+  --header 'Authorization: Bearer YOUR_API_TOKEN' \\
+  --header 'Accept: application/json'`,
+            php: `<?php
+
+use GuzzleHttp\\Client;
+
+$response = (new Client())->get(
+    'https://app.invoicly.io/api/v1/quotes/QUOTE_UUID',
+    ['headers' => ['Authorization' => 'Bearer YOUR_API_TOKEN', 'Accept' => 'application/json']]
+);
+
+$quote = json_decode($response->getBody()->getContents(), true)['data'];`,
+            node: `const axios = require('axios');
+
+const { data } = await axios.get(
+  'https://app.invoicly.io/api/v1/quotes/QUOTE_UUID',
+  { headers: { Authorization: 'Bearer YOUR_API_TOKEN' } }
+);
+
+console.log(data.data);`,
+            python: `import requests
+
+response = requests.get(
+    'https://app.invoicly.io/api/v1/quotes/QUOTE_UUID',
+    headers={'Authorization': 'Bearer YOUR_API_TOKEN'},
+)
+
+print(response.json()['data'])`,
+            ruby: `require 'net/http'
+require 'json'
+
+uri = URI('https://app.invoicly.io/api/v1/quotes/QUOTE_UUID')
+req = Net::HTTP::Get.new(uri)
+req['Authorization'] = 'Bearer YOUR_API_TOKEN'
+req['Accept']        = 'application/json'
+
+res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+puts JSON.parse(res.body)['data']`,
+        },
+    },
+    {
+        id: 'quotes-create',
+        group: 'quotes',
+        groupLabel: 'Quotes',
+        title: 'Create a Quote',
+        method: 'POST',
+        path: '/api/v1/quotes',
+        description: 'Creates a draft quote with line items. The quote number (QUO-YYYY-n by default) is assigned automatically from your document numbering settings, and the total amount is computed from the line items server-side.',
+        features: null,
+        note: 'New quotes always start as draft. Use the convert endpoint to turn an open quote into a draft invoice.',
+        ability: 'quotes:write',
+        params: [
+            { name: 'client_id',   in: 'body', type: 'integer', required: true,  description: 'ID of an existing client owned by you' },
+            { name: 'issue_date',  in: 'body', type: 'date',    required: true,  description: 'Quote issue date (YYYY-MM-DD)' },
+            { name: 'expiry_date', in: 'body', type: 'date',    required: false, description: 'Date the quote expires — must be on or after issue_date' },
+            { name: 'currency',    in: 'body', type: 'string',  required: true,  description: 'ISO 4217 currency code (e.g. UGX, USD)' },
+            { name: 'vat_amount',  in: 'body', type: 'number',  required: false, description: 'VAT amount included in the total' },
+            { name: 'payer_memo',  in: 'body', type: 'string',  required: false, description: 'Memo shown to the client (max 300 chars)' },
+            { name: 'line_items',  in: 'body', type: 'array',   required: true,  description: 'At least one item: { description, quantity, unit_price }' },
+        ],
+        response: `{
+  "data": {
+    "id": 13,
+    "uuid": "2b9d7e10-4f6a-42c8-8d3b-1e0c5a7f9b22",
+    "number": "QUO-2026-2",
+    "status": "draft",
+    "stored_status": "draft",
+    "issue_date": "2026-06-10",
+    "expiry_date": "2026-07-10",
+    "currency": "UGX",
+    "amount": 300.00,
+    "vat_amount": null,
+    "payer_memo": null,
+    "sent_at": null,
+    "converted_invoice_id": null,
+    "client": { "id": 4, "name": "Acme Corporation" },
+    "line_items": [
+      {
+        "id": 32,
+        "description": "Design work",
+        "quantity": 2,
+        "unit_price": 150.00,
+        "line_total": 300.00,
+        "sort_order": 0
+      }
+    ],
+    "created_at": "2026-06-10T09:00:00+00:00",
+    "updated_at": "2026-06-10T09:00:00+00:00"
+  }
+}`,
+        code: {
+            curl: `curl --request POST \\
+  --url https://app.invoicly.io/api/v1/quotes \\
+  --header 'Authorization: Bearer YOUR_API_TOKEN' \\
+  --header 'Content-Type: application/json' \\
+  --data '{
+    "client_id": 4,
+    "issue_date": "2026-06-10",
+    "expiry_date": "2026-07-10",
+    "currency": "UGX",
+    "line_items": [
+      { "description": "Design work", "quantity": 2, "unit_price": 150 }
+    ]
+  }'`,
+            php: `<?php
+
+use GuzzleHttp\\Client;
+
+$response = (new Client())->post(
+    'https://app.invoicly.io/api/v1/quotes',
+    [
+        'headers' => ['Authorization' => 'Bearer YOUR_API_TOKEN'],
+        'json' => [
+            'client_id'   => 4,
+            'issue_date'  => '2026-06-10',
+            'expiry_date' => '2026-07-10',
+            'currency'    => 'UGX',
+            'line_items'  => [
+                ['description' => 'Design work', 'quantity' => 2, 'unit_price' => 150],
+            ],
+        ],
+    ]
+);
+
+$quote = json_decode($response->getBody()->getContents(), true)['data'];`,
+            node: `const axios = require('axios');
+
+const { data } = await axios.post(
+  'https://app.invoicly.io/api/v1/quotes',
+  {
+    client_id: 4,
+    issue_date: '2026-06-10',
+    expiry_date: '2026-07-10',
+    currency: 'UGX',
+    line_items: [
+      { description: 'Design work', quantity: 2, unit_price: 150 },
+    ],
+  },
+  { headers: { Authorization: 'Bearer YOUR_API_TOKEN' } }
+);
+
+console.log(data.data);`,
+            python: `import requests
+
+response = requests.post(
+    'https://app.invoicly.io/api/v1/quotes',
+    headers={'Authorization': 'Bearer YOUR_API_TOKEN'},
+    json={
+        'client_id': 4,
+        'issue_date': '2026-06-10',
+        'expiry_date': '2026-07-10',
+        'currency': 'UGX',
+        'line_items': [
+            {'description': 'Design work', 'quantity': 2, 'unit_price': 150},
+        ],
+    },
+)
+
+quote = response.json()['data']
+print(quote)`,
+            ruby: `require 'net/http'
+require 'json'
+
+uri = URI('https://app.invoicly.io/api/v1/quotes')
+req = Net::HTTP::Post.new(uri)
+req['Authorization'] = 'Bearer YOUR_API_TOKEN'
+req['Content-Type']  = 'application/json'
+req.body = JSON.generate(
+  client_id: 4,
+  issue_date: '2026-06-10',
+  expiry_date: '2026-07-10',
+  currency: 'UGX',
+  line_items: [{ description: 'Design work', quantity: 2, unit_price: 150 }]
+)
+
+res   = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+quote = JSON.parse(res.body)['data']
+puts quote`,
+        },
+    },
+    {
+        id: 'quotes-convert',
+        group: 'quotes',
+        groupLabel: 'Quotes',
+        title: 'Convert to Invoice',
+        method: 'POST',
+        path: '/api/v1/quotes/{uuid}/convert',
+        description: 'Converts an open quote into a draft invoice carrying the quote’s client, amounts, and line items. The quote is marked accepted and linked to the new invoice. A quote can be converted only once; declined quotes cannot be converted (422).',
+        features: null,
+        note: 'The response includes the newly created draft invoice’s id and number — finish and send it via the invoices endpoints or the dashboard.',
+        ability: 'quotes:write',
+        params: [
+            { name: 'uuid', in: 'path', type: 'string', required: true, description: 'The uuid of the quote to convert' },
+        ],
+        response: `{
+  "message": "Quote QUO-2026-1 converted to draft invoice EINV-2026-8.",
+  "invoice": {
+    "id": 57,
+    "uuid": "1f0a9e22-44d1-4f8b-8c7a-0c5b3d9e7a01",
+    "number": "EINV-2026-8",
+    "status": "draft"
+  },
+  "quote": {
+    "id": 12,
+    "uuid": "8a1f3c2e-9b40-4c1d-b7e2-5d6f0a9c3e11",
+    "number": "QUO-2026-1",
+    "status": "accepted",
+    "stored_status": "accepted",
+    "converted_invoice_id": 57
+  }
+}`,
+        code: {
+            curl: `curl --request POST \\
+  --url https://app.invoicly.io/api/v1/quotes/QUOTE_UUID/convert \\
+  --header 'Authorization: Bearer YOUR_API_TOKEN' \\
+  --header 'Accept: application/json'`,
+            php: `<?php
+
+use GuzzleHttp\\Client;
+
+$response = (new Client())->post(
+    'https://app.invoicly.io/api/v1/quotes/QUOTE_UUID/convert',
+    ['headers' => ['Authorization' => 'Bearer YOUR_API_TOKEN', 'Accept' => 'application/json']]
+);
+
+$result = json_decode($response->getBody()->getContents(), true);
+// $result['invoice']['number'] is the new draft invoice number.`,
+            node: `const axios = require('axios');
+
+const { data } = await axios.post(
+  'https://app.invoicly.io/api/v1/quotes/QUOTE_UUID/convert',
+  {},
+  { headers: { Authorization: 'Bearer YOUR_API_TOKEN' } }
+);
+
+console.log(data.invoice.number); // new draft invoice number`,
+            python: `import requests
+
+response = requests.post(
+    'https://app.invoicly.io/api/v1/quotes/QUOTE_UUID/convert',
+    headers={'Authorization': 'Bearer YOUR_API_TOKEN'},
+)
+
+result = response.json()
+print(result['invoice']['number'])  # new draft invoice number`,
+            ruby: `require 'net/http'
+require 'json'
+
+uri = URI('https://app.invoicly.io/api/v1/quotes/QUOTE_UUID/convert')
+req = Net::HTTP::Post.new(uri)
+req['Authorization'] = 'Bearer YOUR_API_TOKEN'
+req['Accept']        = 'application/json'
+
+res    = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+result = JSON.parse(res.body)
+puts result['invoice']['number'] # new draft invoice number`,
+        },
+    },
+    {
+        id: 'quotes-delete',
+        group: 'quotes',
+        groupLabel: 'Quotes',
+        title: 'Delete a Quote',
+        method: 'DELETE',
+        path: '/api/v1/quotes/{uuid}',
+        description: 'Permanently deletes a quote and its line items. Deleting a converted quote does not touch the invoice that was created from it.',
+        features: null,
+        note: null,
+        ability: 'quotes:write',
+        params: [
+            { name: 'uuid', in: 'path', type: 'string', required: true, description: 'The uuid of the quote to delete' },
+        ],
+        response: `{
+  "message": "Quote deleted."
+}`,
+        code: {
+            curl: `curl --request DELETE \\
+  --url https://app.invoicly.io/api/v1/quotes/QUOTE_UUID \\
+  --header 'Authorization: Bearer YOUR_API_TOKEN'`,
+            php: `<?php
+
+use GuzzleHttp\\Client;
+
+(new Client())->delete(
+    'https://app.invoicly.io/api/v1/quotes/QUOTE_UUID',
+    ['headers' => ['Authorization' => 'Bearer YOUR_API_TOKEN']]
+);`,
+            node: `const axios = require('axios');
+
+await axios.delete(
+  'https://app.invoicly.io/api/v1/quotes/QUOTE_UUID',
+  { headers: { Authorization: 'Bearer YOUR_API_TOKEN' } }
+);`,
+            python: `import requests
+
+requests.delete(
+    'https://app.invoicly.io/api/v1/quotes/QUOTE_UUID',
+    headers={'Authorization': 'Bearer YOUR_API_TOKEN'},
+)`,
+            ruby: `require 'net/http'
+
+uri = URI('https://app.invoicly.io/api/v1/quotes/QUOTE_UUID')
+req = Net::HTTP::Delete.new(uri)
+req['Authorization'] = 'Bearer YOUR_API_TOKEN'
+
+Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }`,
+        },
+    },
+
+    // ── Credit notes ────────────────────────────────────────────────────────────
+    {
+        id: 'credit-notes-list',
+        group: 'credit-notes',
+        groupLabel: 'Credit notes',
+        title: 'List Credit Notes',
+        method: 'GET',
+        path: '/api/v1/credit-notes',
+        description: 'Returns a paginated list of all credit notes belonging to the authenticated user. Supports filtering by status, client, and the invoice a credit was applied to. Results are ordered by issue date descending.',
+        features: null,
+        note: null,
+        ability: 'credit-notes:read',
+        params: [
+            { name: 'status',     in: 'query', type: 'string',  required: false, description: 'Filter by status: issued, applied, void' },
+            { name: 'client_id',  in: 'query', type: 'integer', required: false, description: 'Filter credit notes for a specific client by their ID' },
+            { name: 'invoice_id', in: 'query', type: 'integer', required: false, description: 'Filter credit notes linked to a specific invoice' },
+            { name: 'per_page',   in: 'query', type: 'integer', required: false, description: 'Number of results per page (default: 15)' },
+        ],
+        response: `{
+  "data": [
+    {
+      "id": 7,
+      "uuid": "5c8e2a1d-3f70-4b9c-a2e1-9d4f6b0c7e55",
+      "number": "CN-2026-1",
+      "status": "issued",
+      "issue_date": "2026-06-09",
+      "currency": "UGX",
+      "amount": 150.00,
+      "memo": "Overbilled",
+      "applied_at": null,
+      "invoice_id": null,
+      "client": { "id": 4, "name": "Acme Corporation" },
+      "created_at": "2026-06-09T10:00:00+00:00",
+      "updated_at": "2026-06-09T10:00:00+00:00"
+    }
+  ],
+  "links": { "first": "…", "last": "…", "prev": null, "next": null },
+  "meta": { "current_page": 1, "per_page": 15, "total": 1 }
+}`,
+        code: {
+            curl: `curl --request GET \\
+  --url 'https://app.invoicly.io/api/v1/credit-notes?status=issued' \\
+  --header 'Authorization: Bearer YOUR_API_TOKEN' \\
+  --header 'Accept: application/json'`,
+            php: `<?php
+
+use GuzzleHttp\\Client;
+
+$response = (new Client())->get(
+    'https://app.invoicly.io/api/v1/credit-notes',
+    [
+        'headers' => ['Authorization' => 'Bearer YOUR_API_TOKEN', 'Accept' => 'application/json'],
+        'query'   => ['status' => 'issued'],
+    ]
+);
+
+$creditNotes = json_decode($response->getBody()->getContents(), true)['data'];`,
+            node: `const axios = require('axios');
+
+const { data } = await axios.get(
+  'https://app.invoicly.io/api/v1/credit-notes',
+  {
+    headers: { Authorization: 'Bearer YOUR_API_TOKEN' },
+    params: { status: 'issued' },
+  }
+);
+
+console.log(data.data);`,
+            python: `import requests
+
+response = requests.get(
+    'https://app.invoicly.io/api/v1/credit-notes',
+    headers={'Authorization': 'Bearer YOUR_API_TOKEN'},
+    params={'status': 'issued'},
+)
+
+print(response.json()['data'])`,
+            ruby: `require 'net/http'
+require 'json'
+
+uri = URI('https://app.invoicly.io/api/v1/credit-notes?status=issued')
+req = Net::HTTP::Get.new(uri)
+req['Authorization'] = 'Bearer YOUR_API_TOKEN'
+req['Accept']        = 'application/json'
+
+res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+puts JSON.parse(res.body)['data']`,
+        },
+    },
+    {
+        id: 'credit-notes-get',
+        group: 'credit-notes',
+        groupLabel: 'Credit notes',
+        title: 'Get a Credit Note',
+        method: 'GET',
+        path: '/api/v1/credit-notes/{uuid}',
+        description: 'Retrieves a single credit note by its uuid, including the client it was issued to and, once applied, the invoice it settled against.',
+        features: null,
+        note: null,
+        ability: 'credit-notes:read',
+        params: [
+            { name: 'uuid', in: 'path', type: 'string', required: true, description: 'The uuid of the credit note to retrieve' },
+        ],
+        response: `{
+  "data": {
+    "id": 7,
+    "uuid": "5c8e2a1d-3f70-4b9c-a2e1-9d4f6b0c7e55",
+    "number": "CN-2026-1",
+    "status": "applied",
+    "issue_date": "2026-06-09",
+    "currency": "UGX",
+    "amount": 150.00,
+    "memo": "Overbilled",
+    "applied_at": "2026-06-10T08:30:00+00:00",
+    "invoice_id": 57,
+    "client": { "id": 4, "name": "Acme Corporation" },
+    "created_at": "2026-06-09T10:00:00+00:00",
+    "updated_at": "2026-06-10T08:30:00+00:00"
+  }
+}`,
+        code: {
+            curl: `curl --request GET \\
+  --url https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID \\
+  --header 'Authorization: Bearer YOUR_API_TOKEN' \\
+  --header 'Accept: application/json'`,
+            php: `<?php
+
+use GuzzleHttp\\Client;
+
+$response = (new Client())->get(
+    'https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID',
+    ['headers' => ['Authorization' => 'Bearer YOUR_API_TOKEN', 'Accept' => 'application/json']]
+);
+
+$creditNote = json_decode($response->getBody()->getContents(), true)['data'];`,
+            node: `const axios = require('axios');
+
+const { data } = await axios.get(
+  'https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID',
+  { headers: { Authorization: 'Bearer YOUR_API_TOKEN' } }
+);
+
+console.log(data.data);`,
+            python: `import requests
+
+response = requests.get(
+    'https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID',
+    headers={'Authorization': 'Bearer YOUR_API_TOKEN'},
+)
+
+print(response.json()['data'])`,
+            ruby: `require 'net/http'
+require 'json'
+
+uri = URI('https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID')
+req = Net::HTTP::Get.new(uri)
+req['Authorization'] = 'Bearer YOUR_API_TOKEN'
+req['Accept']        = 'application/json'
+
+res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+puts JSON.parse(res.body)['data']`,
+        },
+    },
+    {
+        id: 'credit-notes-create',
+        group: 'credit-notes',
+        groupLabel: 'Credit notes',
+        title: 'Issue a Credit Note',
+        method: 'POST',
+        path: '/api/v1/credit-notes',
+        description: 'Issues a credit note against a client. The number (CN-YYYY-n by default) is assigned automatically from your document numbering settings. Pass apply_immediately with an invoice_id to apply the credit to an open invoice in the same call.',
+        features: null,
+        note: 'Applying creates a bridge payment, so the invoice’s amount_paid and status stay derived from one source of truth. The credit currency must match the invoice currency, and the amount cannot exceed the invoice’s outstanding balance (422).',
+        ability: 'credit-notes:write',
+        params: [
+            { name: 'client_id',         in: 'body', type: 'integer', required: true,  description: 'ID of an existing client owned by you' },
+            { name: 'currency',          in: 'body', type: 'string',  required: true,  description: 'ISO 4217 currency code (e.g. UGX, USD)' },
+            { name: 'amount',            in: 'body', type: 'number',  required: true,  description: 'Credit amount (min 0.01)' },
+            { name: 'invoice_id',        in: 'body', type: 'integer', required: false, description: 'Invoice to credit — required for apply_immediately' },
+            { name: 'issue_date',        in: 'body', type: 'date',    required: false, description: 'Issue date (YYYY-MM-DD). Defaults to today' },
+            { name: 'memo',              in: 'body', type: 'string',  required: false, description: 'Reason for the credit (max 255 chars)' },
+            { name: 'apply_immediately', in: 'body', type: 'boolean', required: false, description: 'Apply the credit to invoice_id in the same call' },
+        ],
+        response: `{
+  "data": {
+    "id": 8,
+    "uuid": "9e0b4c2f-6a18-4d3e-b5c7-2f1a8d0e6b44",
+    "number": "CN-2026-2",
+    "status": "issued",
+    "issue_date": "2026-06-10",
+    "currency": "UGX",
+    "amount": 150.00,
+    "memo": "Overbilled",
+    "applied_at": null,
+    "invoice_id": null,
+    "client": { "id": 4, "name": "Acme Corporation" },
+    "created_at": "2026-06-10T09:00:00+00:00",
+    "updated_at": "2026-06-10T09:00:00+00:00"
+  }
+}`,
+        code: {
+            curl: `curl --request POST \\
+  --url https://app.invoicly.io/api/v1/credit-notes \\
+  --header 'Authorization: Bearer YOUR_API_TOKEN' \\
+  --header 'Content-Type: application/json' \\
+  --data '{
+    "client_id": 4,
+    "currency": "UGX",
+    "amount": 150.00,
+    "memo": "Overbilled"
+  }'`,
+            php: `<?php
+
+use GuzzleHttp\\Client;
+
+$response = (new Client())->post(
+    'https://app.invoicly.io/api/v1/credit-notes',
+    [
+        'headers' => ['Authorization' => 'Bearer YOUR_API_TOKEN'],
+        'json' => [
+            'client_id' => 4,
+            'currency'  => 'UGX',
+            'amount'    => 150.00,
+            'memo'      => 'Overbilled',
+        ],
+    ]
+);
+
+$creditNote = json_decode($response->getBody()->getContents(), true)['data'];`,
+            node: `const axios = require('axios');
+
+const { data } = await axios.post(
+  'https://app.invoicly.io/api/v1/credit-notes',
+  {
+    client_id: 4,
+    currency: 'UGX',
+    amount: 150.0,
+    memo: 'Overbilled',
+  },
+  { headers: { Authorization: 'Bearer YOUR_API_TOKEN' } }
+);
+
+console.log(data.data);`,
+            python: `import requests
+
+response = requests.post(
+    'https://app.invoicly.io/api/v1/credit-notes',
+    headers={'Authorization': 'Bearer YOUR_API_TOKEN'},
+    json={
+        'client_id': 4,
+        'currency': 'UGX',
+        'amount': 150.00,
+        'memo': 'Overbilled',
+    },
+)
+
+credit_note = response.json()['data']
+print(credit_note)`,
+            ruby: `require 'net/http'
+require 'json'
+
+uri = URI('https://app.invoicly.io/api/v1/credit-notes')
+req = Net::HTTP::Post.new(uri)
+req['Authorization'] = 'Bearer YOUR_API_TOKEN'
+req['Content-Type']  = 'application/json'
+req.body = JSON.generate(client_id: 4, currency: 'UGX', amount: 150.00, memo: 'Overbilled')
+
+res         = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+credit_note = JSON.parse(res.body)['data']
+puts credit_note`,
+        },
+    },
+    {
+        id: 'credit-notes-apply',
+        group: 'credit-notes',
+        groupLabel: 'Credit notes',
+        title: 'Apply to an Invoice',
+        method: 'POST',
+        path: '/api/v1/credit-notes/{uuid}/apply',
+        description: 'Applies an issued credit note to one of your open invoices. A bridge payment is recorded against the invoice, so its amount_paid, status, and paid_at update exactly as if a payment had landed. Only issued credit notes can be applied (422 otherwise).',
+        features: null,
+        note: 'The credit and invoice currencies must match, the invoice cannot be a draft, and the credit cannot exceed the invoice’s outstanding balance — violations return 422 with details.',
+        ability: 'credit-notes:write',
+        params: [
+            { name: 'uuid',       in: 'path', type: 'string',  required: true, description: 'The uuid of the credit note to apply' },
+            { name: 'invoice_id', in: 'body', type: 'integer', required: true, description: 'ID of the open invoice to credit' },
+        ],
+        response: `{
+  "data": {
+    "id": 7,
+    "uuid": "5c8e2a1d-3f70-4b9c-a2e1-9d4f6b0c7e55",
+    "number": "CN-2026-1",
+    "status": "applied",
+    "issue_date": "2026-06-09",
+    "currency": "UGX",
+    "amount": 150.00,
+    "memo": "Overbilled",
+    "applied_at": "2026-06-10T08:30:00+00:00",
+    "invoice_id": 57,
+    "client": { "id": 4, "name": "Acme Corporation" },
+    "created_at": "2026-06-09T10:00:00+00:00",
+    "updated_at": "2026-06-10T08:30:00+00:00"
+  }
+}`,
+        code: {
+            curl: `curl --request POST \\
+  --url https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID/apply \\
+  --header 'Authorization: Bearer YOUR_API_TOKEN' \\
+  --header 'Content-Type: application/json' \\
+  --data '{ "invoice_id": 57 }'`,
+            php: `<?php
+
+use GuzzleHttp\\Client;
+
+$response = (new Client())->post(
+    'https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID/apply',
+    [
+        'headers' => ['Authorization' => 'Bearer YOUR_API_TOKEN'],
+        'json'    => ['invoice_id' => 57],
+    ]
+);
+
+$creditNote = json_decode($response->getBody()->getContents(), true)['data'];`,
+            node: `const axios = require('axios');
+
+const { data } = await axios.post(
+  'https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID/apply',
+  { invoice_id: 57 },
+  { headers: { Authorization: 'Bearer YOUR_API_TOKEN' } }
+);
+
+console.log(data.data.status); // "applied"`,
+            python: `import requests
+
+response = requests.post(
+    'https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID/apply',
+    headers={'Authorization': 'Bearer YOUR_API_TOKEN'},
+    json={'invoice_id': 57},
+)
+
+print(response.json()['data']['status'])  # "applied"`,
+            ruby: `require 'net/http'
+require 'json'
+
+uri = URI('https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID/apply')
+req = Net::HTTP::Post.new(uri)
+req['Authorization'] = 'Bearer YOUR_API_TOKEN'
+req['Content-Type']  = 'application/json'
+req.body = JSON.generate(invoice_id: 57)
+
+res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+puts JSON.parse(res.body)['data']['status'] # "applied"`,
+        },
+    },
+    {
+        id: 'credit-notes-void',
+        group: 'credit-notes',
+        groupLabel: 'Credit notes',
+        title: 'Void a Credit Note',
+        method: 'POST',
+        path: '/api/v1/credit-notes/{uuid}/void',
+        description: 'Voids a credit note. If the credit had been applied, its bridge payment is deleted and the invoice’s amount_paid and status are recomputed back automatically. Voiding an already-void credit note returns 422.',
+        features: null,
+        note: null,
+        ability: 'credit-notes:write',
+        params: [
+            { name: 'uuid', in: 'path', type: 'string', required: true, description: 'The uuid of the credit note to void' },
+        ],
+        response: `{
+  "data": {
+    "id": 7,
+    "uuid": "5c8e2a1d-3f70-4b9c-a2e1-9d4f6b0c7e55",
+    "number": "CN-2026-1",
+    "status": "void",
+    "issue_date": "2026-06-09",
+    "currency": "UGX",
+    "amount": 150.00,
+    "memo": "Overbilled",
+    "applied_at": null,
+    "invoice_id": 57,
+    "client": { "id": 4, "name": "Acme Corporation" },
+    "created_at": "2026-06-09T10:00:00+00:00",
+    "updated_at": "2026-06-10T09:15:00+00:00"
+  }
+}`,
+        code: {
+            curl: `curl --request POST \\
+  --url https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID/void \\
+  --header 'Authorization: Bearer YOUR_API_TOKEN' \\
+  --header 'Accept: application/json'`,
+            php: `<?php
+
+use GuzzleHttp\\Client;
+
+$response = (new Client())->post(
+    'https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID/void',
+    ['headers' => ['Authorization' => 'Bearer YOUR_API_TOKEN', 'Accept' => 'application/json']]
+);
+
+$creditNote = json_decode($response->getBody()->getContents(), true)['data'];`,
+            node: `const axios = require('axios');
+
+const { data } = await axios.post(
+  'https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID/void',
+  {},
+  { headers: { Authorization: 'Bearer YOUR_API_TOKEN' } }
+);
+
+console.log(data.data.status); // "void"`,
+            python: `import requests
+
+response = requests.post(
+    'https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID/void',
+    headers={'Authorization': 'Bearer YOUR_API_TOKEN'},
+)
+
+print(response.json()['data']['status'])  # "void"`,
+            ruby: `require 'net/http'
+require 'json'
+
+uri = URI('https://app.invoicly.io/api/v1/credit-notes/CREDIT_NOTE_UUID/void')
+req = Net::HTTP::Post.new(uri)
+req['Authorization'] = 'Bearer YOUR_API_TOKEN'
+req['Accept']        = 'application/json'
+
+res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+puts JSON.parse(res.body)['data']['status'] # "void"`,
+        },
+    },
+
     // ── Webhooks ────────────────────────────────────────────────────────────────
     {
         id: 'webhooks-overview',
