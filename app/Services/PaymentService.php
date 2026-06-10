@@ -9,6 +9,7 @@ use App\Events\PaymentReceived;
 use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Single source of truth for turning payment records into invoice state.
@@ -28,6 +29,8 @@ class PaymentService
      */
     public function recordPayment(Invoice $invoice, array $attributes): Payment
     {
+        $this->rejectDraft($invoice);
+
         $payment = DB::transaction(function () use ($invoice, $attributes) {
             $payment = $invoice->payments()->create([
                 'user_id' => $invoice->user_id,
@@ -60,6 +63,8 @@ class PaymentService
      */
     public function attachToInvoice(Payment $payment, Invoice $invoice): void
     {
+        $this->rejectDraft($invoice);
+
         DB::transaction(function () use ($payment, $invoice) {
             $payment->forceFill([
                 'invoice_id' => $invoice->id,
@@ -96,6 +101,12 @@ class PaymentService
      */
     public function recompute(Invoice $invoice): void
     {
+        // A draft has no payments by construction; never let payment math
+        // flip it out of draft.
+        if ($invoice->status === InvoiceStatus::Draft) {
+            return;
+        }
+
         $paid = (string) $invoice->payments()->sum('amount');
         $paid = bcadd($paid, '0', 2);
 
@@ -117,5 +128,14 @@ class PaymentService
             'status' => $status,
             'paid_at' => $paidAt,
         ])->save();
+    }
+
+    private function rejectDraft(Invoice $invoice): void
+    {
+        if ($invoice->status === InvoiceStatus::Draft) {
+            throw ValidationException::withMessages([
+                'invoice' => 'Payments cannot be recorded against draft invoices. Finalize the invoice first.',
+            ]);
+        }
     }
 }

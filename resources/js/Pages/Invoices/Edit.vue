@@ -177,6 +177,7 @@ function submit() {
                                 v-model="form.status"
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
                             >
+                                <option v-if="invoice.status === 'draft'" value="draft">Draft</option>
                                 <option value="awaiting_payment">Awaiting payment</option>
                                 <option value="paid">Paid</option>
                             </select>

@@ -47,4 +47,12 @@ class InvoiceFactory extends Factory
             'status' => InvoiceStatus::AwaitingPayment->value,
         ]);
     }
+
+    public function draft(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => InvoiceStatus::Draft->value,
+            'amount_paid' => '0',
+        ]);
+    }
 }

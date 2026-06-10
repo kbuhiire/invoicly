@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'amount',
     'amount_paid',
     'paid_at',
+    'sent_at',
     'last_reminder_sent_at',
     'vat_amount',
     'amount_secondary',
@@ -60,6 +61,7 @@ class Invoice extends Model
             'period_from' => 'date',
             'period_to' => 'date',
             'paid_at' => 'datetime',
+            'sent_at' => 'datetime',
             'last_reminder_sent_at' => 'datetime',
             'status' => InvoiceStatus::class,
             'amount' => 'decimal:2',
@@ -88,6 +90,29 @@ class Invoice extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class)->orderByDesc('paid_at');
+    }
+
+    /**
+     * Everything that is not a draft. Drafts must never reach the money
+     * pipelines (dashboard KPIs, forecast, reminders, reconciliation, credit).
+     */
+    public function scopeFinalized($query)
+    {
+        return $query->where('status', '!=', InvoiceStatus::Draft->value);
+    }
+
+    /**
+     * Invoices that can still receive money: finalized, not a template, not
+     * fully paid. The single definition of "open" shared by forecasting,
+     * reminders, and reconciliation.
+     */
+    public function scopeOpenForPayment($query)
+    {
+        return $query
+            ->where('status', '!=', InvoiceStatus::Draft->value)
+            ->where('is_template', false)
+            ->where('status', '!=', InvoiceStatus::Paid->value)
+            ->whereRaw('amount_paid < amount');
     }
 
     /**

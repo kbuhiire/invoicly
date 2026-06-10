@@ -182,7 +182,7 @@ class StoreInvoiceRequest extends FormRequest
             'due_date' => ['nullable', 'date'],
             'period_from' => ['nullable', 'date'],
             'period_to' => ['nullable', 'date'],
-            'status' => ['required', Rule::enum(InvoiceStatus::class)],
+            'status' => ['required', Rule::in(InvoiceStatus::selectableOnCreate())],
             'currency' => ['required', 'string', 'size:3'],
             'vat_amount' => ['nullable', 'numeric', 'min:0'],
             'amount_secondary' => ['nullable', 'numeric', 'min:0'],

@@ -533,15 +533,16 @@ function goBack() {
     }
 }
 
-function submitInvoice() {
+function submitInvoice(status = null) {
     stepMessage.value = '';
-    form.transform((data) => ({ ...data, share_invoice: shareInvoice.value })).post(
-        route('invoices.store'),
-        {
-            forceFormData: true,
-            preserveScroll: true,
-        },
-    );
+    form.transform((data) => ({
+        ...data,
+        status: status ?? data.status,
+        share_invoice: shareInvoice.value,
+    })).post(route('invoices.store'), {
+        forceFormData: true,
+        preserveScroll: true,
+    });
 }
 
 const pageTitle = computed(() =>
@@ -1875,15 +1876,24 @@ onUnmounted(() => {
                     >
                         Continue
                     </button>
-                    <button
-                        v-else
-                        type="button"
-                        class="rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-neutral-900 shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-neutral-900 disabled:opacity-50"
-                        :disabled="form.processing"
-                        @click="submitInvoice"
-                    >
-                        Create invoice
-                    </button>
+                    <template v-else>
+                        <button
+                            type="button"
+                            class="rounded-full border border-neutral-600 bg-transparent px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-neutral-900 disabled:opacity-50"
+                            :disabled="form.processing"
+                            @click="submitInvoice('draft')"
+                        >
+                            Save as draft
+                        </button>
+                        <button
+                            type="button"
+                            class="rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-neutral-900 shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-neutral-900 disabled:opacity-50"
+                            :disabled="form.processing"
+                            @click="submitInvoice()"
+                        >
+                            Create invoice
+                        </button>
+                    </template>
                 </div>
             </div>
         </div>

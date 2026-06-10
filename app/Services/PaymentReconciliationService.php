@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMatchStatus;
 use App\Enums\PaymentSource;
 use App\Events\InvoiceReconciled;
@@ -162,9 +161,7 @@ class PaymentReconciliationService
     {
         return Invoice::query()
             ->where('user_id', $user->id)
-            ->where('is_template', false)
-            ->where('status', '!=', InvoiceStatus::Paid->value)
-            ->whereRaw('amount_paid < amount')
+            ->openForPayment()
             ->get();
     }
 

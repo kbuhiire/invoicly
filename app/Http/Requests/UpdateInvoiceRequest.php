@@ -52,4 +52,29 @@ class UpdateInvoiceRequest extends FormRequest
             'line_items.*.unit_price' => ['required', 'numeric', 'min:0'],
         ];
     }
+
+    public function after(): array
+    {
+        return [
+            function ($validator) {
+                $invoice = $this->route('invoice');
+
+                if (! $invoice instanceof \App\Models\Invoice) {
+                    return;
+                }
+
+                $requestedDraft = $this->input('status') === InvoiceStatus::Draft->value;
+
+                // Finalizing is one-way: a sent/paid invoice (or one with
+                // payments) can never be demoted back to draft.
+                if ($requestedDraft && ! $invoice->status->isDraft()) {
+                    $validator->errors()->add('status', 'A finalized invoice cannot be reverted to draft.');
+                }
+
+                if ($requestedDraft && $invoice->payments()->exists()) {
+                    $validator->errors()->add('status', 'An invoice with recorded payments cannot be a draft.');
+                }
+            },
+        ];
+    }
 }

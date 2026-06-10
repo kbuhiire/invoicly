@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\ClientType;
-use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -36,9 +35,7 @@ class ForecastService
 
         $invoices = Invoice::query()
             ->where('user_id', $user->id)
-            ->where('is_template', false)
-            ->where('status', '!=', InvoiceStatus::Paid->value)
-            ->whereRaw('amount_paid < amount')
+            ->openForPayment()
             ->when($segment !== null, fn ($q) => $q->whereHas('client', fn ($c) => $c->where('type', $segment->value)))
             ->with('client')
             ->get();

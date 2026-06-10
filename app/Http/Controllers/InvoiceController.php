@@ -62,7 +62,8 @@ class InvoiceController extends Controller
             $scoped->whereDate('issue_date', '<=', $dateTo);
         }
 
-        $balanceBase = clone $scoped;
+        // Drafts are not money owed yet — keep them out of the balance cards.
+        $balanceBase = (clone $scoped)->finalized();
 
         // Money actually received vs. still outstanding — partial-payment aware.
         $paidTotal = bcadd((string) (clone $balanceBase)->sum('amount_paid'), '0', 2);
@@ -101,6 +102,7 @@ class InvoiceController extends Controller
                 'currency_secondary' => $invoice->currency_secondary,
                 'has_attachment' => (bool) $invoice->attachment_path,
                 'is_template' => (bool) $invoice->is_template,
+                'sent_at' => $invoice->sent_at?->toDateTimeString(),
             ]);
 
         return Inertia::render('Invoices/Index', [
@@ -387,6 +389,27 @@ class InvoiceController extends Controller
         return redirect()
             ->route('invoices.index', ['segment' => $invoice->client->type === ClientType::Invoicly ? 'invoicly' : 'external'])
             ->with('success', 'Invoice updated.');
+    }
+
+    /**
+     * Finalize a draft (draft → awaiting payment) and/or stamp the invoice as
+     * sent. One-way: finalized invoices never go back to draft.
+     */
+    public function finalize(Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('update', $invoice);
+
+        if ($invoice->status === InvoiceStatus::Draft) {
+            $invoice->status = InvoiceStatus::AwaitingPayment;
+        }
+
+        if ($invoice->sent_at === null) {
+            $invoice->sent_at = now();
+        }
+
+        $invoice->save();
+
+        return back()->with('success', "Invoice {$invoice->number} marked as sent.");
     }
 
     public function destroy(Invoice $invoice): RedirectResponse

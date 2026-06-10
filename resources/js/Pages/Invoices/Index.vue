@@ -206,6 +206,11 @@ function toggleRowMenu(id) {
     rowMenuOpen.value = rowMenuOpen.value === id ? null : id;
 }
 
+function finalizeInvoice(inv) {
+    rowMenuOpen.value = null;
+    router.post(route('invoices.finalize', inv.uuid), {}, { preserveScroll: true });
+}
+
 const listLoading = ref(false);
 let removeStartListener;
 let removeFinishListener;
@@ -330,6 +335,7 @@ const hasActiveFilters = computed(
                             class="rounded-full border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm"
                         >
                             <option value="">Status</option>
+                            <option value="draft">Draft</option>
                             <option value="paid">Paid</option>
                             <option value="partially_paid">Partially paid</option>
                             <option value="awaiting_payment">Awaiting payment</option>
@@ -529,7 +535,15 @@ const hasActiveFilters = computed(
                                                 Edit
                                             </Link>
                                             <button
-                                                v-if="inv.status !== 'paid' && !inv.is_template"
+                                                v-if="inv.status === 'draft'"
+                                                type="button"
+                                                class="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                                                @click="finalizeInvoice(inv)"
+                                            >
+                                                Mark as sent
+                                            </button>
+                                            <button
+                                                v-if="inv.status !== 'paid' && inv.status !== 'draft' && !inv.is_template"
                                                 type="button"
                                                 class="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
                                                 @click="openPaymentModal(inv)"
