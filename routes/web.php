@@ -34,6 +34,8 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('invoices/export', [InvoiceController::class, 'export'])->name('invoices.export');
+    Route::get('payments/export', [PaymentController::class, 'export'])->name('payments.export');
     Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
     Route::get('invoices/{invoice}/attachment', [InvoiceController::class, 'downloadAttachment'])->name('invoices.attachment');
     Route::post('invoices/preview', [InvoiceController::class, 'previewInvoice'])->name('invoices.preview');

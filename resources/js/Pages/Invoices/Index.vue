@@ -237,6 +237,17 @@ onUnmounted(() => {
 const hasActiveFilters = computed(
     () => Boolean(search.value || status.value || dateFrom.value || dateTo.value),
 );
+
+const exportUrl = computed(() =>
+    route('invoices.export', {
+        segment: props.segment,
+        search: search.value || undefined,
+        status: status.value || undefined,
+        date_from: dateFrom.value || undefined,
+        date_to: dateTo.value || undefined,
+        client_id: props.filters.client_id || undefined,
+    }),
+);
 </script>
 
 <template>
@@ -352,15 +363,15 @@ const hasActiveFilters = computed(
                         >
                             Create invoice
                         </PrimaryButton>
-                        <button
-                            type="button"
-                            class="rounded-full border border-gray-200 bg-white p-2 text-gray-600 shadow-sm transition hover:bg-gray-50 hover:text-gray-900"
-                            aria-label="More actions"
+                        <a
+                            :href="exportUrl"
+                            class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 hover:text-gray-900"
                         >
-                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path d="M10 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM10 11.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM11.5 15.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                             </svg>
-                        </button>
+                            Export CSV
+                        </a>
                     </div>
                 </div>
 

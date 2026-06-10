@@ -19,13 +19,18 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\LaravelPdf\Facades\Pdf;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InvoiceController extends Controller
 {
-    public function index(Request $request): Response
+    /**
+     * Filter state shared by the list page and the CSV export so the download
+     * always matches what is on screen.
+     *
+     * @return array{query: \Illuminate\Database\Eloquent\Builder, preStatusQuery: \Illuminate\Database\Eloquent\Builder, filters: array<string, mixed>}
+     */
+    private function filteredQuery(Request $request): array
     {
-        $this->authorize('viewAny', Invoice::class);
-
         $segment = $request->string('segment', 'external')->toString();
         if (! in_array($segment, ['invoicly', 'external'], true)) {
             $segment = 'external';
@@ -37,11 +42,7 @@ class InvoiceController extends Controller
         $statusFilter = $request->string('status')->toString();
         $dateFrom = $request->date('date_from');
         $dateTo = $request->date('date_to');
-
-        $perPage = $request->integer('per_page', 10);
-        if (! in_array($perPage, [10, 25, 50], true)) {
-            $perPage = 10;
-        }
+        $clientId = $request->integer('client_id') ?: null;
 
         $scoped = Invoice::query()
             ->where('user_id', $request->user()->id)
@@ -62,8 +63,44 @@ class InvoiceController extends Controller
             $scoped->whereDate('issue_date', '<=', $dateTo);
         }
 
+        if ($clientId !== null) {
+            $scoped->where('client_id', $clientId);
+        }
+
+        $preStatus = clone $scoped;
+
+        $statusValues = array_map(fn (InvoiceStatus $c) => $c->value, InvoiceStatus::cases());
+        if ($statusFilter !== '' && in_array($statusFilter, $statusValues, true)) {
+            $scoped->where('status', $statusFilter);
+        }
+
+        return [
+            'query' => $scoped,
+            'preStatusQuery' => $preStatus,
+            'filters' => [
+                'segment' => $segment,
+                'search' => $search,
+                'status' => $statusFilter,
+                'date_from' => $dateFrom?->format('Y-m-d'),
+                'date_to' => $dateTo?->format('Y-m-d'),
+                'client_id' => $clientId,
+            ],
+        ];
+    }
+
+    public function index(Request $request): Response
+    {
+        $this->authorize('viewAny', Invoice::class);
+
+        ['query' => $scoped, 'preStatusQuery' => $preStatus, 'filters' => $filters] = $this->filteredQuery($request);
+
+        $perPage = $request->integer('per_page', 10);
+        if (! in_array($perPage, [10, 25, 50], true)) {
+            $perPage = 10;
+        }
+
         // Drafts are not money owed yet — keep them out of the balance cards.
-        $balanceBase = (clone $scoped)->finalized();
+        $balanceBase = (clone $preStatus)->finalized();
 
         // Money actually received vs. still outstanding — partial-payment aware.
         $paidTotal = bcadd((string) (clone $balanceBase)->sum('amount_paid'), '0', 2);
@@ -71,11 +108,6 @@ class InvoiceController extends Controller
         $awaitingTotal = bcsub($totalBilled, $paidTotal, 2);
         if (bccomp($awaitingTotal, '0', 2) < 0) {
             $awaitingTotal = '0.00';
-        }
-
-        $statusValues = array_map(fn (InvoiceStatus $c) => $c->value, InvoiceStatus::cases());
-        if ($statusFilter !== '' && in_array($statusFilter, $statusValues, true)) {
-            $scoped->where('status', $statusFilter);
         }
 
         $invoices = $scoped
@@ -107,12 +139,13 @@ class InvoiceController extends Controller
 
         return Inertia::render('Invoices/Index', [
             'invoices' => $invoices,
-            'segment' => $segment,
+            'segment' => $filters['segment'],
             'filters' => [
-                'search' => $search,
-                'status' => $statusFilter,
-                'date_from' => $dateFrom?->format('Y-m-d'),
-                'date_to' => $dateTo?->format('Y-m-d'),
+                'search' => $filters['search'],
+                'status' => $filters['status'],
+                'date_from' => $filters['date_from'],
+                'date_to' => $filters['date_to'],
+                'client_id' => $filters['client_id'],
                 'per_page' => $perPage,
             ],
             'balance' => [
@@ -121,6 +154,53 @@ class InvoiceController extends Controller
                 'currency' => $request->user()->preferred_currency,
             ],
         ]);
+    }
+
+    /**
+     * Stream the currently filtered invoice list as CSV.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Invoice::class);
+
+        ['query' => $scoped] = $this->filteredQuery($request);
+
+        $filename = 'invoices-'.now()->format('Y-m-d').'.csv';
+        $today = now()->startOfDay();
+
+        return response()->streamDownload(function () use ($scoped, $today) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, [
+                'Number', 'Client', 'Segment', 'Status', 'Overdue', 'Issue date', 'Due date',
+                'Currency', 'Amount', 'Tax amount', 'Amount paid', 'Outstanding', 'Sent at', 'Paid at',
+            ]);
+
+            foreach ($scoped->with('client')->lazyByIdDesc(500) as $invoice) {
+                $overdue = $invoice->status !== InvoiceStatus::Paid
+                    && $invoice->status !== InvoiceStatus::Draft
+                    && $invoice->due_date !== null
+                    && $invoice->due_date->lt($today);
+
+                fputcsv($out, [
+                    $invoice->number,
+                    $invoice->client?->name,
+                    $invoice->client?->type?->value,
+                    $invoice->status->label(),
+                    $overdue ? 'yes' : 'no',
+                    $invoice->issue_date?->format('Y-m-d'),
+                    $invoice->due_date?->format('Y-m-d'),
+                    $invoice->currency,
+                    $invoice->amount,
+                    $invoice->vat_amount,
+                    $invoice->amount_paid,
+                    $invoice->outstandingAmount(),
+                    $invoice->sent_at?->format('Y-m-d H:i'),
+                    $invoice->paid_at?->format('Y-m-d H:i'),
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']);
     }
 
     public function create(Request $request): Response

@@ -72,20 +72,26 @@ function statusBadge(status) {
         <div class="pb-16">
             <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
                 <div
-                    v-if="page.props.flash?.success"
-                    class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
+                    class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
                 >
-                    {{ page.props.flash.success }}
-                </div>
-
-                <div class="mb-6">
-                    <h1 class="font-display text-3xl font-semibold tracking-tight text-gray-900">
-                        Payments
-                    </h1>
-                    <p class="mt-1 text-sm text-gray-500">
-                        Incoming payments are matched to invoices automatically. Anything we
-                        couldn't place with confidence shows up here for a quick check.
-                    </p>
+                    <div>
+                        <h1 class="font-display text-3xl font-semibold tracking-tight text-gray-900">
+                            Payments
+                        </h1>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Incoming payments are matched to invoices automatically. Anything we
+                            couldn't place with confidence shows up here for a quick check.
+                        </p>
+                    </div>
+                    <a
+                        :href="route('payments.export')"
+                        class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 hover:text-gray-900"
+                    >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        Export CSV
+                    </a>
                 </div>
 
                 <!-- Needs attention -->

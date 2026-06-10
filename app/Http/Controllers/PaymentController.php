@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Services\PaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PaymentController extends Controller
 {
@@ -32,6 +33,42 @@ class PaymentController extends Controller
         ]);
 
         return back()->with('success', 'Payment recorded.');
+    }
+
+    /**
+     * Stream all of the user's payments as CSV.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $query = Payment::query()
+            ->where('user_id', $request->user()->id)
+            ->with('invoice:id,number');
+
+        $filename = 'payments-'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($query) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, [
+                'Paid at', 'Invoice', 'Amount', 'Currency', 'Source', 'Match status',
+                'Gateway', 'Reference', 'External ID',
+            ]);
+
+            foreach ($query->lazyByIdDesc(500) as $payment) {
+                fputcsv($out, [
+                    $payment->paid_at?->format('Y-m-d H:i'),
+                    $payment->invoice?->number,
+                    $payment->amount,
+                    $payment->currency,
+                    $payment->source?->value,
+                    $payment->match_status?->value,
+                    $payment->gateway,
+                    $payment->reference,
+                    $payment->external_id,
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']);
     }
 
     /**
