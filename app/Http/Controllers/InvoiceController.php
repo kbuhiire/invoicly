@@ -177,6 +177,11 @@ class InvoiceController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'details']);
 
+        $taxRates = $request->user()->taxRates()
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->get(['id', 'uuid', 'name', 'rate', 'is_default']);
+
         return Inertia::render('Invoices/Create', [
             'segment' => $segment,
             'clients' => $clients,
@@ -184,6 +189,7 @@ class InvoiceController extends Controller
             'currencies' => $currencies,
             'nextInvoiceNumber' => $nextInvoiceNumber,
             'paymentMethods' => $paymentMethods,
+            'taxRates' => $taxRates,
         ]);
     }
 
@@ -242,6 +248,7 @@ class InvoiceController extends Controller
                 'currency' => strtoupper($data['currency']),
                 'amount' => $amount,
                 'vat_amount' => $data['vat_amount'] ?? null,
+                'tax_rate_id' => $data['tax_rate_id'] ?? null,
                 'payer_memo' => $data['payer_memo'] ?? null,
                 'payment_details' => $data['payment_details'] ?? null,
                 'invoice_type' => $data['invoice_type'] ?? 'Service',
@@ -298,6 +305,11 @@ class InvoiceController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'details']);
 
+        $taxRates = $request->user()->taxRates()
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->get(['id', 'uuid', 'name', 'rate', 'is_default']);
+
         return Inertia::render('Invoices/Edit', [
             'invoice' => [
                 'id' => $invoice->id,
@@ -307,6 +319,8 @@ class InvoiceController extends Controller
                 'issue_date' => $invoice->issue_date->format('Y-m-d'),
                 'status' => $invoice->status->value,
                 'currency' => $invoice->currency,
+                'vat_amount' => $invoice->vat_amount,
+                'tax_rate_id' => $invoice->tax_rate_id,
                 'amount_secondary' => $invoice->amount_secondary,
                 'currency_secondary' => $invoice->currency_secondary,
                 'payment_details' => $invoice->payment_details,
@@ -321,6 +335,7 @@ class InvoiceController extends Controller
             'segment' => $invoice->client->type === ClientType::Invoicly ? 'invoicly' : 'external',
             'clients' => $clients,
             'paymentMethods' => $paymentMethods,
+            'taxRates' => $taxRates,
         ]);
     }
 
@@ -346,6 +361,8 @@ class InvoiceController extends Controller
                 'status' => $data['status'],
                 'currency' => strtoupper($data['currency']),
                 'amount' => $amount,
+                'vat_amount' => $data['vat_amount'] ?? null,
+                'tax_rate_id' => $data['tax_rate_id'] ?? null,
                 'amount_secondary' => $data['amount_secondary'] ?? null,
                 'currency_secondary' => isset($data['currency_secondary']) ? strtoupper($data['currency_secondary']) : null,
                 'payment_details' => $data['payment_details'] ?? null,

@@ -10,6 +10,7 @@ use App\Http\Controllers\ReconciliationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecurringInvoiceController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\TaxRateController;
 use App\Http\Controllers\UserPreferredCurrencyController;
 use App\Http\Controllers\WebhookSettingsController;
 use Illuminate\Support\Facades\Route;
@@ -77,6 +78,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/settings/address', [SettingsController::class, 'updateAddress'])->name('settings.address.update');
     Route::patch('/settings/invoice', [SettingsController::class, 'updateInvoice'])->name('settings.invoice.update');
     Route::patch('/settings/numbering', [SettingsController::class, 'updateNumbering'])->name('settings.numbering.update');
+    Route::post('/settings/tax-rates', [TaxRateController::class, 'store'])->name('settings.tax-rates.store');
+    Route::patch('/settings/tax-rates/{taxRate}', [TaxRateController::class, 'update'])->name('settings.tax-rates.update');
+    Route::delete('/settings/tax-rates/{taxRate}', [TaxRateController::class, 'destroy'])->name('settings.tax-rates.destroy');
     Route::patch('/settings/invoice/address', [SettingsController::class, 'updateInvoiceAddress'])->name('settings.invoice.address.update');
     Route::patch('/settings/invoice/phone', [SettingsController::class, 'updateInvoicePhone'])->name('settings.invoice.phone.update');
     Route::get('/settings/invoice/preview', [SettingsController::class, 'previewInvoicePdf'])->name('settings.invoice.preview');

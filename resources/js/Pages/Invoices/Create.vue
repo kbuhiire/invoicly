@@ -14,6 +14,7 @@ const props = defineProps({
     currencies: { type: Array, required: true },
     nextInvoiceNumber: { type: String, default: '' },
     paymentMethods: { type: Array, default: () => [] },
+    taxRates: { type: Array, default: () => [] },
 });
 
 const page = usePage();
@@ -130,6 +131,7 @@ const form = useForm({
     status: 'awaiting_payment',
     currency: user.value?.preferred_currency || 'UGX',
     vat_amount: '',
+    tax_rate_id: props.taxRates.find((r) => r.is_default)?.id ?? '',
     payer_memo: '',
     payment_details: '',
     invoice_type: 'Service',
@@ -297,6 +299,35 @@ const vatAmountNum = computed(() => {
 
 const totalAmount = computed(() => subtotalAmount.value + vatAmountNum.value);
 
+// Auto-compute VAT from the selected tax rate until the user hand-edits the
+// amount; re-picking a rate takes over again.
+const vatManuallyEdited = ref(false);
+
+const selectedTaxRate = computed(
+    () => props.taxRates.find((r) => r.id === form.tax_rate_id) ?? null,
+);
+
+function applyTaxRate() {
+    if (!selectedTaxRate.value || vatManuallyEdited.value) {
+        return;
+    }
+    const computedVat = (subtotalAmount.value * Number(selectedTaxRate.value.rate)) / 100;
+    form.vat_amount = computedVat > 0 ? computedVat.toFixed(2) : '';
+}
+
+watch(
+    () => form.tax_rate_id,
+    () => {
+        vatManuallyEdited.value = false;
+        applyTaxRate();
+    },
+);
+watch(subtotalAmount, () => applyTaxRate());
+
+function onVatInput() {
+    vatManuallyEdited.value = true;
+}
+
 function stripFormatting(val) {
     return String(val ?? '').replace(/,/g, '');
 }
@@ -378,6 +409,7 @@ async function fetchPreview() {
             period_to: form.period_to || null,
             currency: form.currency,
             vat_amount: form.vat_amount || null,
+            tax_rate_id: form.tax_rate_id || null,
             payer_memo: form.payer_memo || null,
             payment_details: form.payment_details || null,
             invoice_type: form.invoice_type,
@@ -1269,12 +1301,24 @@ onUnmounted(() => {
                                     }}</span>
                                 </div>
 
-                                <div class="mt-3">
+                                <div class="mt-3 space-y-2">
+                                    <select
+                                        v-if="taxRates.length > 0"
+                                        v-model="form.tax_rate_id"
+                                        class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                                        aria-label="Tax rate"
+                                    >
+                                        <option value="">No tax rate</option>
+                                        <option v-for="rate in taxRates" :key="rate.id" :value="rate.id">
+                                            {{ rate.name }} ({{ Number(rate.rate) }}%)
+                                        </option>
+                                    </select>
                                     <TextInput
                                         v-model="form.vat_amount"
                                         type="text"
                                         class="block w-full"
                                         :placeholder="`VAT/GST or equivalent in ${form.currency} ${currencySymbol}`"
+                                        @input="onVatInput"
                                     />
                                     <InputError class="mt-1.5" :message="form.errors.vat_amount" />
                                 </div>

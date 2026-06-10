@@ -40,6 +40,8 @@ class UpdateInvoiceRequest extends FormRequest
             'issue_date' => ['required', 'date'],
             'status' => ['required', Rule::enum(InvoiceStatus::class)],
             'currency' => ['required', 'string', 'size:3'],
+            'vat_amount' => ['nullable', 'numeric', 'min:0'],
+            'tax_rate_id' => ['nullable', 'integer', Rule::exists('tax_rates', 'id')->where('user_id', $userId)],
             'amount_secondary' => ['nullable', 'numeric', 'min:0'],
             'currency_secondary' => ['nullable', 'string', 'size:3', 'required_with:amount_secondary'],
             'is_template' => ['sometimes', 'boolean'],

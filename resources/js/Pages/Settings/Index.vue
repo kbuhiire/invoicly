@@ -18,6 +18,7 @@ defineProps({
     recurringInvoices: { type: Array, default: () => [] },
     templateInvoices: { type: Array, default: () => [] },
     numbering: { type: Array, default: () => [] },
+    taxRates: { type: Array, default: () => [] },
 });
 
 const tabs = [
@@ -76,7 +77,7 @@ const tabs = [
 
                 <PaymentMethodsTab :active="activeTab === 'payment'" />
 
-                <BookkeepingTab :active="activeTab === 'bookkeeping'" />
+                <BookkeepingTab :active="activeTab === 'bookkeeping'" :tax-rates="taxRates" />
 
                 <AutomationTab
                     :active="activeTab === 'automation'"

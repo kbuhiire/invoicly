@@ -96,6 +96,11 @@ class User extends Authenticatable
         return $this->hasMany(WebhookSubscription::class);
     }
 
+    public function taxRates(): HasMany
+    {
+        return $this->hasMany(TaxRate::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

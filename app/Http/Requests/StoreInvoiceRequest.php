@@ -185,6 +185,7 @@ class StoreInvoiceRequest extends FormRequest
             'status' => ['required', Rule::in(InvoiceStatus::selectableOnCreate())],
             'currency' => ['required', 'string', 'size:3'],
             'vat_amount' => ['nullable', 'numeric', 'min:0'],
+            'tax_rate_id' => ['nullable', 'integer', Rule::exists('tax_rates', 'id')->where('user_id', $this->user()->id)],
             'amount_secondary' => ['nullable', 'numeric', 'min:0'],
             'currency_secondary' => ['nullable', 'string', 'size:3', 'required_with:amount_secondary'],
             'payer_memo' => ['nullable', 'string', 'max:300'],

@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'sent_at',
     'last_reminder_sent_at',
     'vat_amount',
+    'tax_rate_id',
     'amount_secondary',
     'currency_secondary',
     'payer_memo',
@@ -85,6 +86,11 @@ class Invoice extends Model
     public function lineItems(): HasMany
     {
         return $this->hasMany(InvoiceLineItem::class)->orderBy('sort_order');
+    }
+
+    public function taxRate(): BelongsTo
+    {
+        return $this->belongsTo(TaxRate::class);
     }
 
     public function payments(): HasMany

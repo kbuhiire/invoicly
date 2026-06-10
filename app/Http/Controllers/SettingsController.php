@@ -103,6 +103,10 @@ class SettingsController extends Controller
             'recurringInvoices' => $recurringInvoices,
             'templateInvoices' => $templateInvoices,
             'numbering' => $numbering,
+            'taxRates' => $user->taxRates()
+                ->orderByDesc('is_default')
+                ->orderBy('name')
+                ->get(['id', 'uuid', 'name', 'rate', 'is_default']),
         ]);
     }
 
