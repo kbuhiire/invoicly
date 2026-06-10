@@ -7,6 +7,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\ReconciliationController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecurringInvoiceController;
 use App\Http\Controllers\SettingsController;
@@ -44,6 +45,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('invoices', InvoiceController::class)->except(['show']);
     Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store'])->name('invoices.payments.store');
     Route::delete('payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
+    Route::get('reports/aging', [ReportController::class, 'aging'])->name('reports.aging');
+    Route::get('reports/aging/export', [ReportController::class, 'agingExport'])->name('reports.aging.export');
     Route::get('reconciliation', [ReconciliationController::class, 'index'])->name('reconciliation.index');
     Route::post('reconciliation/{payment}/match', [ReconciliationController::class, 'match'])->name('reconciliation.match');
     Route::delete('reconciliation/{payment}', [ReconciliationController::class, 'dismiss'])->name('reconciliation.dismiss');

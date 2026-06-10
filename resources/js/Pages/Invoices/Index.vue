@@ -80,10 +80,15 @@ function visitIndex(extra = {}) {
             date_from: dateFrom.value || undefined,
             date_to: dateTo.value || undefined,
             per_page: perPage.value || undefined,
+            client_id: props.filters.client_id || undefined,
             ...extra,
         },
         { preserveState: true, replace: true },
     );
+}
+
+function clearClientFilter() {
+    visitIndex({ client_id: undefined });
 }
 
 let searchTimer;
@@ -314,6 +319,21 @@ const exportUrl = computed(() =>
                     <p v-else>
                         Invoicly client invoices are linked to organizations on the platform.
                     </p>
+                </div>
+
+                <div
+                    v-if="filters.client_id"
+                    class="mb-4 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-sm text-brand-800"
+                >
+                    Filtered by a single client
+                    <button
+                        type="button"
+                        class="rounded-full p-0.5 transition hover:bg-brand-100"
+                        aria-label="Clear client filter"
+                        @click="clearClientFilter"
+                    >
+                        <span class="text-base leading-none" aria-hidden="true">×</span>
+                    </button>
                 </div>
 
                 <div
