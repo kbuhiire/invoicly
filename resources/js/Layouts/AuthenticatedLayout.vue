@@ -44,6 +44,7 @@ const invoicesActive = computed(
                     <div class="hidden items-center gap-1 sm:flex">
                         <NavLink :href="route('dashboard')" :active="route().current('dashboard')">Dashboard</NavLink>
                         <NavLink :href="route('invoices.index', { segment: 'external' })" :active="invoicesActive">Invoices</NavLink>
+                        <NavLink :href="route('quotes.index')" :active="route().current('quotes.*')">Quotes</NavLink>
                         <NavLink :href="route('clients.index', { segment: 'external' })" :active="route().current('clients.*')">Clients</NavLink>
                         <NavLink :href="route('reconciliation.index')" :active="route().current('reconciliation.index')">Payments</NavLink>
                         <NavLink :href="route('credit-notes.index')" :active="route().current('credit-notes.*')">Credit notes</NavLink>
@@ -121,6 +122,7 @@ const invoicesActive = computed(
                     <div class="space-y-1">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">Dashboard</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('invoices.index', { segment: 'external' })" :active="invoicesActive">Invoices</ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('quotes.index')" :active="route().current('quotes.*')">Quotes</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('clients.index', { segment: 'external' })" :active="route().current('clients.*')">Clients</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('reconciliation.index')" :active="route().current('reconciliation.index')">Payments</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('credit-notes.index')" :active="route().current('credit-notes.*')">Credit notes</ResponsiveNavLink>

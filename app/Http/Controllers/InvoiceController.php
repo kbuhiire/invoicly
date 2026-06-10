@@ -702,12 +702,6 @@ class InvoiceController extends Controller
      */
     private function lineItemsTotal(array $lineItems): string
     {
-        $sum = '0.00';
-        foreach ($lineItems as $row) {
-            $line = bcmul((string) $row['quantity'], (string) $row['unit_price'], 2);
-            $sum = bcadd($sum, $line, 2);
-        }
-
-        return $sum;
+        return \App\Support\LineItems::total($lineItems);
     }
 }
