@@ -211,6 +211,11 @@ function finalizeInvoice(inv) {
     router.post(route('invoices.finalize', inv.uuid), {}, { preserveScroll: true });
 }
 
+function duplicateInvoice(inv) {
+    rowMenuOpen.value = null;
+    router.post(route('invoices.duplicate', inv.uuid));
+}
+
 const listLoading = ref(false);
 let removeStartListener;
 let removeFinishListener;
@@ -549,6 +554,13 @@ const hasActiveFilters = computed(
                                                 @click="openPaymentModal(inv)"
                                             >
                                                 Record payment
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                                                @click="duplicateInvoice(inv)"
+                                            >
+                                                Duplicate
                                             </button>
                                             <a
                                                 :href="route('invoices.pdf', inv.uuid)"

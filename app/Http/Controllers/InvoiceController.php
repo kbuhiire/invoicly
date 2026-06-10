@@ -392,6 +392,66 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Clone an invoice (with line items) into a fresh draft dated today.
+     * Payment history, sent/reminder stamps, and attachments do not carry over.
+     */
+    public function duplicate(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('view', $invoice);
+        $this->authorize('create', Invoice::class);
+
+        $invoice->load(['client', 'lineItems']);
+
+        $copy = DB::transaction(function () use ($request, $invoice) {
+            $copy = $invoice->replicate([
+                'uuid',
+                'number',
+                'amount_paid',
+                'paid_at',
+                'sent_at',
+                'last_reminder_sent_at',
+                'attachment_path',
+            ]);
+
+            $copy->status = InvoiceStatus::Draft;
+            $copy->amount_paid = '0';
+            $copy->is_template = false;
+
+            $netTermDays = $invoice->due_date !== null
+                ? $invoice->issue_date->diffInDays($invoice->due_date, false)
+                : null;
+
+            $copy->issue_date = now()->startOfDay();
+            $copy->due_date = $netTermDays !== null && $netTermDays >= 0
+                ? now()->startOfDay()->addDays($netTermDays)
+                : null;
+
+            $copy->number = Invoice::nextNumberForUser(
+                $request->user(),
+                $invoice->client->type,
+                $copy->issue_date
+            );
+
+            $copy->save();
+
+            foreach ($invoice->lineItems as $item) {
+                $copy->lineItems()->create([
+                    'description' => $item->description,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'sort_order' => $item->sort_order,
+                ]);
+            }
+
+            return $copy;
+        });
+
+        return redirect()
+            ->route('invoices.edit', $copy)
+            ->with('success', "Invoice duplicated as draft {$copy->number}.");
+    }
+
+    /**
      * Finalize a draft (draft → awaiting payment) and/or stamp the invoice as
      * sent. One-way: finalized invoices never go back to draft.
      */
