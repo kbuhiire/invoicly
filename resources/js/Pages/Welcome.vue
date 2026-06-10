@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
+import { useLandingAnimations } from '@/composables/useLandingAnimations';
 
 defineProps({
     canLogin: { type: Boolean },
@@ -35,30 +36,8 @@ function applyTheme() {
 
 const mobileMenuOpen = ref(false);
 
-// Scroll-entry reveal: heavy fade-up + blur via IntersectionObserver.
-const vReveal = {
-    mounted(el, binding) {
-        el.classList.add('reveal');
-        const delay = Number(binding.value) || 0;
-        if (delay) el.style.transitionDelay = `${delay}ms`;
-        const io = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        el.classList.add('is-visible');
-                        io.unobserve(el);
-                    }
-                });
-            },
-            { threshold: 0.1, rootMargin: '0px 0px -8% 0px' },
-        );
-        io.observe(el);
-        el.__revealIO = io;
-    },
-    unmounted(el) {
-        el.__revealIO?.disconnect();
-    },
-};
+const pageRoot = ref(null);
+useLandingAnimations(pageRoot);
 
 const navLinks = [
     { label: 'Features', href: '#features' },
@@ -136,7 +115,7 @@ const proPlanFeatures = [
 <template>
     <Head title="Invoicly — Your invoicing, simplified" />
 
-    <div class="relative min-h-[100dvh] overflow-x-clip bg-[#fafaf9] font-sans text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100">
+    <div ref="pageRoot" class="relative min-h-[100dvh] overflow-x-clip bg-[#fafaf9] font-sans text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100">
         <!-- Ambient mesh -->
         <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
             <div class="absolute -top-48 left-[8%] h-[42rem] w-[42rem] rounded-full bg-brand-200/40 blur-[130px] dark:bg-brand-900/20"></div>
@@ -258,18 +237,18 @@ const proPlanFeatures = [
         <section class="relative px-4 pt-36 sm:pt-44 lg:pt-52">
             <div class="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
                 <div>
-                    <span v-reveal class="inline-flex items-center gap-2 rounded-full border border-gray-900/10 bg-white/70 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-brand-700 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-brand-300">
+                    <span data-hero-item class="inline-flex items-center gap-2 rounded-full border border-gray-900/10 bg-white/70 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-brand-700 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-brand-300">
                         <span class="h-1.5 w-1.5 rounded-full bg-brand-500"></span>
                         Invoice smarter
                     </span>
-                    <h1 v-reveal="80" class="mt-6 font-display text-[3.25rem] font-semibold leading-[0.95] tracking-tight text-gray-900 sm:text-7xl lg:text-[5.25rem] dark:text-white">
+                    <h1 data-hero-item class="mt-6 font-display text-[3.25rem] font-semibold leading-[0.95] tracking-tight text-gray-900 sm:text-7xl lg:text-[5.25rem] dark:text-white">
                         Your invoicing,<br />
                         <span class="text-brand-600 dark:text-brand-400">simplified.</span>
                     </h1>
-                    <p v-reveal="160" class="mt-7 max-w-[34ch] text-lg leading-relaxed text-gray-500 dark:text-gray-400">
+                    <p data-hero-item class="mt-7 max-w-[34ch] text-lg leading-relaxed text-gray-500 dark:text-gray-400">
                         The all-in-one platform that turns billing admin into a background task — so you can focus on the work that actually pays.
                     </p>
-                    <div v-reveal="220" class="mt-10 flex flex-wrap items-center gap-3">
+                    <div data-hero-item class="mt-10 flex flex-wrap items-center gap-3">
                         <Link
                             v-if="canRegister"
                             href="/register"
@@ -287,13 +266,13 @@ const proPlanFeatures = [
                             See how it works
                         </a>
                     </div>
-                    <p v-reveal="280" class="mt-6 text-sm text-gray-400 dark:text-gray-600">
+                    <p data-hero-item class="mt-6 text-sm text-gray-400 dark:text-gray-600">
                         No credit card required · Free plan available
                     </p>
                 </div>
 
                 <!-- Product card in double-bezel -->
-                <div v-reveal="120" class="relative">
+                <div data-hero-card class="relative">
                     <div class="rounded-[2.25rem] bg-gray-900/[0.04] p-2 ring-1 ring-gray-900/5 shadow-[0_50px_100px_-30px_rgba(15,23,42,0.3)] dark:bg-white/5 dark:ring-white/10">
                         <div class="overflow-hidden rounded-[1.75rem] bg-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.7)] dark:bg-gray-900">
                             <div class="flex items-center gap-2 border-b border-gray-100 px-5 py-3.5 dark:border-gray-800">
@@ -311,6 +290,7 @@ const proPlanFeatures = [
                                     <div
                                         v-for="inv in mockInvoices"
                                         :key="inv.id"
+                                        data-hero-row
                                         class="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-3 transition-colors duration-300 hover:bg-gray-100/80 dark:bg-gray-800/60 dark:hover:bg-gray-800"
                                     >
                                         <div>
@@ -355,7 +335,7 @@ const proPlanFeatures = [
         <!-- ── FEATURES (Asymmetric Bento) ───────────────────────────── -->
         <section id="features" class="px-4 py-28 lg:py-36">
             <div class="mx-auto max-w-7xl">
-                <div v-reveal class="mb-14 max-w-2xl">
+                <div data-reveal class="mb-14 max-w-2xl">
                     <span class="inline-flex items-center rounded-full border border-gray-900/10 bg-white/70 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-brand-700 dark:border-white/10 dark:bg-white/5 dark:text-brand-300">Products &amp; features</span>
                     <h2 class="mt-5 font-display text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl dark:text-white">
                         Every invoice. One platform.
@@ -365,11 +345,10 @@ const proPlanFeatures = [
                     </p>
                 </div>
 
-                <div class="grid grid-cols-1 gap-5 md:grid-cols-6">
+                <div data-reveal-stagger class="grid grid-cols-1 gap-5 md:grid-cols-6">
                     <div
                         v-for="(feat, i) in features"
                         :key="feat.title"
-                        v-reveal="i * 90"
                         :class="featureSpans[i]"
                         class="rounded-[2rem] bg-gray-900/[0.03] p-1.5 ring-1 ring-gray-900/5 dark:bg-white/5 dark:ring-white/10"
                     >
@@ -386,7 +365,7 @@ const proPlanFeatures = [
         <!-- ── HOW IT WORKS — INVOICE ────────────────────────────────── -->
         <section id="how-it-works" class="px-4 py-28 lg:py-36">
             <div class="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-2 lg:gap-16">
-                <div v-reveal>
+                <div data-reveal>
                     <span class="inline-flex items-center rounded-full border border-gray-900/10 bg-white/70 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-brand-700 dark:border-white/10 dark:bg-white/5 dark:text-brand-300">Invoice management</span>
                     <h2 class="mt-5 font-display text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl dark:text-white">
                         Switch on the invoice autopilot.
@@ -404,7 +383,7 @@ const proPlanFeatures = [
                     </ul>
                 </div>
 
-                <div v-reveal="120" class="flex justify-center lg:justify-end">
+                <div data-reveal data-reveal-delay="0.12" class="flex justify-center lg:justify-end">
                     <div class="w-full max-w-sm rounded-[2rem] bg-brand-500/10 p-2 ring-1 ring-brand-500/10 shadow-[0_40px_80px_-28px_rgba(13,148,136,0.4)] dark:bg-white/5 dark:ring-white/10">
                         <div class="rounded-[1.625rem] bg-white p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.7)] dark:bg-gray-900">
                             <div class="mb-5 flex items-center justify-between">
@@ -442,38 +421,38 @@ const proPlanFeatures = [
         <!-- ── REPORTING ─────────────────────────────────────────────── -->
         <section class="px-4 py-28 lg:py-36">
             <div class="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-2 lg:gap-16">
-                <div v-reveal="120" class="order-2 flex justify-center lg:order-1 lg:justify-start">
+                <div data-reveal data-reveal-delay="0.12" class="order-2 flex justify-center lg:order-1 lg:justify-start">
                     <div class="w-full max-w-sm rounded-[2rem] bg-gray-900/[0.04] p-2 ring-1 ring-gray-900/5 shadow-[0_40px_80px_-28px_rgba(15,23,42,0.25)] dark:bg-white/5 dark:ring-white/10">
                         <div class="rounded-[1.625rem] bg-white p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.7)] dark:bg-gray-900">
                             <div class="mb-1 flex items-center justify-between">
                                 <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">Revenue overview</p>
                                 <span class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-500 dark:bg-gray-800 dark:text-gray-400">Monthly</span>
                             </div>
-                            <p class="mb-5 font-mono text-3xl font-bold tabular-nums text-gray-900 dark:text-white">$24,890 <span class="text-base font-medium text-emerald-500">+18%</span></p>
-                            <div class="flex items-end gap-2" style="height: 80px">
+                            <p class="mb-5 font-mono text-3xl font-bold tabular-nums text-gray-900 dark:text-white"><span data-counter data-counter-to="24890">$24,890</span> <span class="text-base font-medium text-emerald-500">+18%</span></p>
+                            <div data-bars class="flex items-end gap-2" style="height: 80px">
                                 <div
                                     v-for="(h, i) in [40, 55, 35, 65, 50, 75, 60, 80, 45, 70, 55, 90]"
                                     :key="i"
-                                    class="flex-1 rounded-t-md transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                                    class="flex-1 rounded-t-md"
                                     :class="i === 11 ? 'bg-brand-600 dark:bg-brand-500' : 'bg-brand-200 dark:bg-brand-800'"
                                     :style="{ height: h + '%' }"
                                 ></div>
                             </div>
                             <div class="mt-4 grid grid-cols-3 gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
                                 <div v-for="stat in [
-                                    { label: 'Invoiced', val: '$31,200' },
-                                    { label: 'Collected', val: '$24,890' },
-                                    { label: 'Overdue', val: '$6,310' },
+                                    { label: 'Invoiced', val: 31200 },
+                                    { label: 'Collected', val: 24890 },
+                                    { label: 'Overdue', val: 6310 },
                                 ]" :key="stat.label" class="text-center">
                                     <p class="text-[11px] text-gray-400 dark:text-gray-600">{{ stat.label }}</p>
-                                    <p class="mt-0.5 font-mono text-sm font-bold tabular-nums text-gray-800 dark:text-gray-200">{{ stat.val }}</p>
+                                    <p data-counter :data-counter-to="stat.val" class="mt-0.5 font-mono text-sm font-bold tabular-nums text-gray-800 dark:text-gray-200">{{ '$' + stat.val.toLocaleString('en-US') }}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div v-reveal class="order-1 lg:order-2">
+                <div data-reveal class="order-1 lg:order-2">
                     <span class="inline-flex items-center rounded-full border border-gray-900/10 bg-white/70 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-brand-700 dark:border-white/10 dark:bg-white/5 dark:text-brand-300">Reporting</span>
                     <h2 class="mt-5 font-display text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl dark:text-white">
                         Reports that actually make sense.
@@ -496,15 +475,15 @@ const proPlanFeatures = [
         <!-- ── PRICING ───────────────────────────────────────────────── -->
         <section id="pricing" class="px-4 py-28 lg:py-36">
             <div class="mx-auto max-w-7xl">
-                <div v-reveal class="mb-14 text-center">
+                <div data-reveal class="mb-14 text-center">
                     <span class="inline-flex items-center rounded-full border border-gray-900/10 bg-white/70 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-brand-700 dark:border-white/10 dark:bg-white/5 dark:text-brand-300">Pricing</span>
                     <h2 class="mt-5 font-display text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl dark:text-white">Simple, honest pricing</h2>
                     <p class="mt-4 text-lg text-gray-500 dark:text-gray-400">Start free. Upgrade when you need more.</p>
                 </div>
 
-                <div class="mx-auto grid max-w-4xl items-stretch gap-6 lg:grid-cols-2">
+                <div data-reveal-stagger class="mx-auto grid max-w-4xl items-stretch gap-6 lg:grid-cols-2">
                     <!-- Free -->
-                    <div v-reveal class="rounded-[2rem] bg-gray-900/[0.03] p-1.5 ring-1 ring-gray-900/5 dark:bg-white/5 dark:ring-white/10">
+                    <div class="rounded-[2rem] bg-gray-900/[0.03] p-1.5 ring-1 ring-gray-900/5 dark:bg-white/5 dark:ring-white/10">
                         <div class="flex h-full flex-col rounded-[1.625rem] bg-white p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.6)] dark:bg-gray-900">
                             <p class="text-sm font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">Free membership</p>
                             <p class="mt-1 text-sm text-gray-400 dark:text-gray-600">No credit card. No commitment.</p>
@@ -522,7 +501,7 @@ const proPlanFeatures = [
                     </div>
 
                     <!-- Pro (highlighted) -->
-                    <div v-reveal="100" class="rounded-[2rem] bg-gradient-to-b from-brand-500/30 to-brand-600/10 p-1.5 ring-1 ring-brand-500/20 shadow-[0_40px_90px_-30px_rgba(13,148,136,0.5)] dark:from-brand-500/20 dark:to-transparent dark:ring-brand-500/20">
+                    <div class="rounded-[2rem] bg-gradient-to-b from-brand-500/30 to-brand-600/10 p-1.5 ring-1 ring-brand-500/20 shadow-[0_40px_90px_-30px_rgba(13,148,136,0.5)] dark:from-brand-500/20 dark:to-transparent dark:ring-brand-500/20">
                         <div class="flex h-full flex-col rounded-[1.625rem] bg-white p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.7)] dark:bg-gray-900">
                             <div class="flex items-center gap-2">
                                 <p class="text-sm font-semibold uppercase tracking-widest text-brand-700 dark:text-brand-400">Pro plan</p>
@@ -555,7 +534,7 @@ const proPlanFeatures = [
         <!-- ── DEVELOPERS (inset dark panel) ─────────────────────────── -->
         <section id="developers" class="px-4 py-28 lg:py-36">
             <div class="mx-auto max-w-7xl">
-                <div v-reveal class="rounded-[2.5rem] bg-gray-950 p-1.5 ring-1 ring-white/10 shadow-[0_50px_120px_-40px_rgba(15,23,42,0.6)]">
+                <div data-reveal class="rounded-[2.5rem] bg-gray-950 p-1.5 ring-1 ring-white/10 shadow-[0_50px_120px_-40px_rgba(15,23,42,0.6)]">
                     <div class="rounded-[2rem] bg-[#0a0d12] p-8 sm:p-12 lg:p-16">
                         <div class="grid items-center gap-14 lg:grid-cols-2">
                             <div>
@@ -626,7 +605,7 @@ const proPlanFeatures = [
 
         <!-- ── CTA BANNER ────────────────────────────────────────────── -->
         <section class="px-4 py-28 lg:py-36">
-            <div v-reveal class="mx-auto max-w-5xl">
+            <div data-reveal class="mx-auto max-w-5xl">
                 <div class="relative overflow-hidden rounded-[2.5rem] bg-gray-900/[0.03] p-1.5 ring-1 ring-gray-900/5 dark:bg-white/5 dark:ring-white/10">
                     <div class="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-600 to-brand-700 px-8 py-20 text-center sm:py-24">
                         <div class="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-2xl"></div>
