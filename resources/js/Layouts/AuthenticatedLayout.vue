@@ -5,6 +5,7 @@ import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
+import ToastHub from '@/Components/ToastHub.vue';
 import { Link, usePage } from '@inertiajs/vue3';
 
 const showingNavigationDropdown = ref(false);
@@ -32,6 +33,7 @@ const invoicesActive = computed(
 
 <template>
     <div class="min-h-[100dvh] bg-gray-50">
+        <ToastHub />
         <!-- ── Floating island app bar ───────────────────────────── -->
         <div class="sticky top-0 z-30 px-4 pt-4">
             <nav class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 rounded-2xl border border-gray-200/70 bg-white/80 pl-4 pr-3 shadow-[0_10px_30px_-15px_rgba(15,23,42,0.18)] backdrop-blur-xl">

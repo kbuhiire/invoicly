@@ -1,12 +1,15 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import DangerButton from '@/Components/DangerButton.vue';
+import EmptyState from '@/Components/EmptyState.vue';
 import Modal from '@/Components/Modal.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import StatusBadge from '@/Components/StatusBadge.vue';
+import TableSkeleton from '@/Components/TableSkeleton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps({
     invoices: { type: Object, required: true },
@@ -202,6 +205,28 @@ const rowMenuOpen = ref(null);
 function toggleRowMenu(id) {
     rowMenuOpen.value = rowMenuOpen.value === id ? null : id;
 }
+
+const listLoading = ref(false);
+let removeStartListener;
+let removeFinishListener;
+onMounted(() => {
+    removeStartListener = router.on('start', (event) => {
+        if (event.detail.visit.url.pathname === new URL(route('invoices.index')).pathname) {
+            listLoading.value = true;
+        }
+    });
+    removeFinishListener = router.on('finish', () => {
+        listLoading.value = false;
+    });
+});
+onUnmounted(() => {
+    removeStartListener?.();
+    removeFinishListener?.();
+});
+
+const hasActiveFilters = computed(
+    () => Boolean(search.value || status.value || dateFrom.value || dateTo.value),
+);
 </script>
 
 <template>
@@ -210,12 +235,6 @@ function toggleRowMenu(id) {
     <AuthenticatedLayout>
         <div class="pb-16">
             <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-                <div
-                    v-if="page.props.flash?.success"
-                    class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
-                >
-                    {{ page.props.flash.success }}
-                </div>
                 <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <h1 class="font-display text-3xl font-semibold tracking-tight text-gray-900">Invoices</h1>
@@ -385,7 +404,28 @@ function toggleRowMenu(id) {
                             Invoice settings
                         </button>
                     </div>
-                    <div class="overflow-x-auto">
+                    <TableSkeleton v-if="listLoading" :rows="5" :cols="6" />
+                    <EmptyState
+                        v-else-if="invoices.data.length === 0"
+                        title="No invoices found"
+                        :description="
+                            hasActiveFilters
+                                ? 'No invoices match your current filters. Try adjusting the search or date range.'
+                                : 'Create your first invoice and it will show up here along with its payment status.'
+                        "
+                    >
+                        <template #action>
+                            <PrimaryButton
+                                v-if="!hasActiveFilters"
+                                type="button"
+                                class="rounded-full px-5 py-2.5"
+                                @click="addInvoiceModalOpen = true"
+                            >
+                                Create invoice
+                            </PrimaryButton>
+                        </template>
+                    </EmptyState>
+                    <div v-else class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-100 text-sm">
                             <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                                 <tr>
@@ -432,10 +472,9 @@ function toggleRowMenu(id) {
                                     <td class="px-5 py-4">
                                         <span
                                             v-if="inv.has_attachment"
-                                            class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                            style="background: #e0f2fe; color: #0369a1"
+                                            class="inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800 dark:bg-sky-950 dark:text-sky-300"
                                         >
-                                            UPLOADED
+                                            Uploaded
                                         </span>
                                         <span v-else class="text-xs text-gray-400">—</span>
                                     </td>
@@ -458,27 +497,7 @@ function toggleRowMenu(id) {
                                             }}
                                         </div>
                                         <div class="mt-1">
-                                            <span
-                                                v-if="inv.status === 'paid'"
-                                                class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                                style="background: #e6f4ea; color: #1e8e3e"
-                                            >
-                                                Paid
-                                            </span>
-                                            <span
-                                                v-else-if="inv.status === 'partially_paid'"
-                                                class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                                style="background: #e0e7ff; color: #3730a3"
-                                            >
-                                                Partially paid
-                                            </span>
-                                            <span
-                                                v-else
-                                                class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                                style="background: #fef7e0; color: #b05a00"
-                                            >
-                                                Awaiting payment
-                                            </span>
+                                            <StatusBadge :status="inv.status" kind="invoice" />
                                         </div>
                                         <div
                                             v-if="inv.status === 'partially_paid'"
