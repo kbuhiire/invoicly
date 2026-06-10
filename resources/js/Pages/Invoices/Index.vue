@@ -891,20 +891,17 @@ const exportUrl = computed(() =>
             </div>
         </Modal>
 
-        <div
-            v-if="currencyOpen"
-            class="fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-4"
-            @click.self="currencyOpen = false"
-        >
-            <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+        <Modal :show="currencyOpen" max-width="md" @close="currencyOpen = false">
+            <div class="px-6 py-5">
                 <h3 class="text-lg font-semibold text-gray-900">Display currency</h3>
                 <p class="mt-1 text-sm text-gray-500">
                     Used for balance summary totals (3-letter ISO code, uppercase).
                 </p>
                 <form class="mt-4 space-y-4" @submit.prevent="submitCurrency">
                     <div>
-                        <label class="text-xs font-medium text-gray-600">Currency</label>
+                        <label for="display-currency" class="text-xs font-medium text-gray-600">Currency</label>
                         <TextInput
+                            id="display-currency"
                             v-model="currencyForm.preferred_currency"
                             type="text"
                             class="mt-1 block w-full uppercase"
@@ -925,6 +922,6 @@ const exportUrl = computed(() =>
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
     </AuthenticatedLayout>
 </template>

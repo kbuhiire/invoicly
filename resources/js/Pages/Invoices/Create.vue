@@ -5,7 +5,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import Modal from '@/Components/Modal.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps({
     segment: { type: String, required: true },
@@ -110,6 +110,20 @@ const clientTab = ref('existing');
 const clientPickerOpen = ref(false);
 const clientSearch = ref('');
 const stepMessage = ref('');
+const stepMessageBanner = ref(null);
+
+// Surface the validation banner — it sits above the step content and can be
+// off-screen when the user submits from the bottom of a long form.
+watch(stepMessage, async (message) => {
+    if (!message) {
+        return;
+    }
+    await nextTick();
+    stepMessageBanner.value?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+
+// Flat list of server-side validation errors, shown as one summary banner.
+const serverErrorSummary = computed(() => Object.values(form.errors ?? {}));
 
 const form = useForm({
     segment: props.segment,
@@ -784,6 +798,27 @@ onUnmounted(() => {
 
                 <div class="flex flex-col gap-6 lg:flex-row lg:items-start">
                     <div class="min-w-0 flex-1 space-y-6">
+                        <div
+                            v-if="stepMessage"
+                            ref="stepMessageBanner"
+                            role="alert"
+                            class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+                        >
+                            <svg class="mt-0.5 h-4 w-4 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                            </svg>
+                            {{ stepMessage }}
+                        </div>
+                        <div
+                            v-if="serverErrorSummary.length"
+                            role="alert"
+                            class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900"
+                        >
+                            <p class="font-medium">Please fix the following before continuing:</p>
+                            <ul class="mt-1 list-inside list-disc space-y-0.5">
+                                <li v-for="(message, idx) in serverErrorSummary" :key="idx">{{ message }}</li>
+                            </ul>
+                        </div>
                         <div v-show="step === 1" class="space-y-6">
                             <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
                                 <h2 class="text-lg font-semibold text-gray-900">Select client</h2>
@@ -1396,9 +1431,10 @@ onUnmounted(() => {
                                             <button
                                                 type="button"
                                                 class="mb-1 text-sm text-red-500 hover:text-red-700"
+                                                :aria-label="`Remove line item ${index + 1}`"
                                                 @click="removeLine(index)"
                                             >
-                                                ✕
+                                                <span aria-hidden="true">✕</span>
                                             </button>
                                         </div>
                                     </div>

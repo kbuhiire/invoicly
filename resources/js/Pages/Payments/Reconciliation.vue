@@ -60,8 +60,10 @@ function dismiss(payment) {
 }
 
 function statusBadge(status) {
-    if (status === 'review') return { label: 'Needs review', bg: '#fef7e0', fg: '#b05a00' };
-    return { label: 'Unmatched', bg: '#fde8e8', fg: '#b91c1c' };
+    if (status === 'review') {
+        return { label: 'Needs review', classes: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' };
+    }
+    return { label: 'Unmatched', classes: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' };
 }
 </script>
 
@@ -122,7 +124,7 @@ function statusBadge(status) {
                                     </span>
                                     <span
                                         class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                        :style="{ background: statusBadge(payment.match_status).bg, color: statusBadge(payment.match_status).fg }"
+                                        :class="statusBadge(payment.match_status).classes"
                                     >
                                         {{ statusBadge(payment.match_status).label }}
                                     </span>

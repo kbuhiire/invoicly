@@ -338,9 +338,10 @@ function submit() {
                                     <button
                                         type="button"
                                         class="text-sm text-red-600 hover:text-red-800"
+                                        :aria-label="`Remove line item ${index + 1}`"
                                         @click="removeLine(index)"
                                     >
-                                        ✕
+                                        <span aria-hidden="true">✕</span>
                                     </button>
                                 </div>
                             </div>
