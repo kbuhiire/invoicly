@@ -42,6 +42,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('reconciliation', [ReconciliationController::class, 'index'])->name('reconciliation.index');
     Route::post('reconciliation/{payment}/match', [ReconciliationController::class, 'match'])->name('reconciliation.match');
     Route::delete('reconciliation/{payment}', [ReconciliationController::class, 'dismiss'])->name('reconciliation.dismiss');
+    Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
+    Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
+    Route::get('/clients/{client}', [ClientController::class, 'show'])->name('clients.show');
     Route::patch('/clients/{client}', [ClientController::class, 'update'])->name('clients.update');
     Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
     Route::post('/payment-methods', [PaymentMethodController::class, 'store'])->name('payment-methods.store');
