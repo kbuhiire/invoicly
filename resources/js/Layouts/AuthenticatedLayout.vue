@@ -46,6 +46,7 @@ const invoicesActive = computed(
                         <NavLink :href="route('invoices.index', { segment: 'external' })" :active="invoicesActive">Invoices</NavLink>
                         <NavLink :href="route('clients.index', { segment: 'external' })" :active="route().current('clients.*')">Clients</NavLink>
                         <NavLink :href="route('reconciliation.index')" :active="route().current('reconciliation.index')">Payments</NavLink>
+                        <NavLink :href="route('credit-notes.index')" :active="route().current('credit-notes.*')">Credit notes</NavLink>
                         <NavLink :href="route('reports.aging')" :active="route().current('reports.*')">Reports</NavLink>
                     </div>
                 </div>
@@ -122,6 +123,7 @@ const invoicesActive = computed(
                         <ResponsiveNavLink :href="route('invoices.index', { segment: 'external' })" :active="invoicesActive">Invoices</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('clients.index', { segment: 'external' })" :active="route().current('clients.*')">Clients</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('reconciliation.index')" :active="route().current('reconciliation.index')">Payments</ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('credit-notes.index')" :active="route().current('credit-notes.*')">Credit notes</ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('reports.aging')" :active="route().current('reports.*')">Reports</ResponsiveNavLink>
                     </div>
                     <div class="mt-3 border-t border-gray-100 pt-3">

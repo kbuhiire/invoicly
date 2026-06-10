@@ -593,6 +593,14 @@ const exportUrl = computed(() =>
                                             >
                                                 Duplicate
                                             </button>
+                                            <Link
+                                                v-if="inv.status !== 'paid' && inv.status !== 'draft' && !inv.is_template"
+                                                :href="route('credit-notes.index', { invoice_id: inv.id })"
+                                                class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                                @click="rowMenuOpen = null"
+                                            >
+                                                Issue credit note
+                                            </Link>
                                             <a
                                                 :href="route('invoices.pdf', inv.uuid)"
                                                 class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"

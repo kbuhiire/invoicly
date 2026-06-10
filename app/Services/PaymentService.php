@@ -34,6 +34,7 @@ class PaymentService
         $payment = DB::transaction(function () use ($invoice, $attributes) {
             $payment = $invoice->payments()->create([
                 'user_id' => $invoice->user_id,
+                'credit_note_id' => $attributes['credit_note_id'] ?? null,
                 'amount' => $attributes['amount'],
                 'currency' => strtoupper($attributes['currency'] ?? $invoice->currency),
                 'paid_at' => $attributes['paid_at'] ?? now(),

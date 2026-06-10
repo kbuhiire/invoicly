@@ -145,7 +145,7 @@ class NumberingTest extends TestCase
 
         $this->actingAs($user)->get('/settings?tab=invoice')
             ->assertInertia(fn ($page) => $page
-                ->has('numbering', 2)
+                ->has('numbering', 3)
                 ->where('numbering.0.document_type', 'invoice_external')
                 ->where('numbering.0.prefix', 'EINV'));
     }

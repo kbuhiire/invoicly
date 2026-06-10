@@ -2,33 +2,28 @@
 
 namespace App\Models;
 
-use App\Enums\PaymentMatchStatus;
-use App\Enums\PaymentSource;
-use Database\Factories\PaymentFactory;
+use App\Enums\CreditNoteStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'user_id',
+    'client_id',
     'invoice_id',
-    'credit_note_id',
-    'amount',
+    'number',
+    'status',
+    'issue_date',
     'currency',
-    'paid_at',
-    'reference',
-    'gateway',
-    'external_id',
-    'source',
-    'match_status',
-    'metadata',
+    'amount',
+    'memo',
+    'applied_at',
 ])]
-class Payment extends Model
+class CreditNote extends Model
 {
-    /** @use HasFactory<PaymentFactory> */
-    use HasFactory, HasUuids;
+    use HasUuids;
 
     public function uniqueIds(): array
     {
@@ -43,11 +38,10 @@ class Payment extends Model
     protected function casts(): array
     {
         return [
+            'status' => CreditNoteStatus::class,
+            'issue_date' => 'date',
             'amount' => 'decimal:2',
-            'paid_at' => 'datetime',
-            'source' => PaymentSource::class,
-            'match_status' => PaymentMatchStatus::class,
-            'metadata' => 'array',
+            'applied_at' => 'datetime',
         ];
     }
 
@@ -56,13 +50,21 @@ class Payment extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
     }
 
-    public function creditNote(): BelongsTo
+    /**
+     * The bridge payment created when this credit was applied to an invoice.
+     */
+    public function payment(): HasOne
     {
-        return $this->belongsTo(CreditNote::class);
+        return $this->hasOne(Payment::class);
     }
 }

@@ -80,6 +80,7 @@ class SettingsController extends Controller
         $numbering = collect([
             DocumentNumberService::TYPE_INVOICE_EXTERNAL => 'External invoices',
             DocumentNumberService::TYPE_INVOICE_INVOICLY => 'Invoicly invoices',
+            DocumentNumberService::TYPE_CREDIT_NOTE => 'Credit notes',
         ])->map(function (string $label, string $type) use ($numberService, $user) {
             $sequence = $numberService->sequenceFor($user, $type);
 
